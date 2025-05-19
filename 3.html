@@ -1,0 +1,662 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --color-bg-light: linear-gradient(to bottom right, #ffffff, #f3f4f6);
+      --color-bg-dark: linear-gradient(to bottom right, #111827, #1f2937);
+      --color-text-light: #1f2937;
+      --color-text-dark: #f3f4f6;
+      --color-card-light: white;
+      --color-card-dark: #1f2937;
+      --color-border-light: #e5e7eb;
+      --color-border-dark: #374151;
+    }
+
+    /* Core Tailwind utilities for offline use */
+    /* Layout */
+    * { max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
+    *:before, *:after { box-sizing: inherit; }
+    body { overflow-x: hidden; }
+    .container { width: 100%; max-width: 48rem; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; flex-wrap: wrap; }
+    .flex { flex-wrap: wrap !important; }
+    [class*="flex-"] { flex-wrap: wrap !important; }
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-4 { gap: 1rem; }
+    .w-full { width: 100%; }
+    .max-w-3xl { max-width: 48rem; }
+    img {height: 30vh !important;}
+
+    /* Spacing */
+    @media (max-width: 767px) { .card { margin: 0 0 1rem 0 !important; width: 100% !important; } }
+    .m-4 { margin: 1rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mb-4 { margin-bottom: 1rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .p-4 { padding: 1rem; }
+    .space-y-2 > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse))); margin-bottom: calc(0.5rem * var(--tw-space-y-reverse)); }
+
+    /* Typography */
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; display: flex; justify-content: center; padding: 0 1rem; }
+    .text-center { text-align: center; }
+    .text-lg { font-size: 1.125rem; }
+    .text-xl { font-size: 1.25rem; }
+    .text-6xl { font-size: 3.75rem; line-height: 1; }
+    .font-bold { font-weight: 700; }
+
+    /* Colors */
+    body.light { background: var(--color-bg-light); color: var(--color-text-light); }
+    body.dark { background: var(--color-bg-dark); color: var(--color-text-dark); }
+    .text-gray-600 { color: #0088db !important; }
+    .text-gray-900 { color: #111827; }
+    .text-green-600 { color: rgb(22 163 74); }
+    .text-red-600 { color: rgb(220 38 38); }
+    .text-red-700 { color: rgb(185 28 28); }
+    body.dark .text-red-700 { color: rgb(185 28 28) !important; }
+    body.dark .text-green-700 { color: rgb(0 161 60) !important; }
+    .text-orange-600 { color: rgb(234 88 12); }
+    .text-blue-600 { color: rgb(37 99 235); }
+    .bg-white { background-color: #ffffff; }
+    .bg-gray-100 { background-color: #f3f4f6; }
+
+    /* Borders & Effects */
+    .rounded-lg { border-radius: 0.5rem; max-width: 100%; }
+    .border { border-width: 1px; }
+    .border-gray-200 { border-color: #a9c5ff33 !important; }
+    .border-blue-500 { border-color: rgb(59 130 246); }
+    body.dark .border-blue-500 { border-color: rgb(39 87 165) !important; }
+    .border-green-500 { border-color: rgb(34 197 94); }
+    body.dark .border-green-500 { border-color: rgb(19 105 51) !important; }
+    body.dark .border-red-500 { border-color: rgb(129 3 3) !important; }
+    .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06); }
+
+    /* Light/Dark mode specific styles */
+    body.light .bg-gray-50 { background-color: rgb(249 250 251); }
+    body.light .bg-blue-50 { background-color: #eff6ff; }
+    body.light .bg-green-50 { background-color: #c4ffd6 !important; }
+    body.light .bg-orange-50 { background-color: #ffe3d9 !important; }
+    body.light .bg-red-50 { background-color: #ffc9c9 !important; }
+
+    body.dark .bg-gray-50 { background-color: #113457 !important; }
+    body.dark .bg-blue-50 { background-color: #243d75 !important; }
+    body.dark .bg-green-50 { background-color: #00470f !important; }
+    body.dark .bg-orange-50 { background-color: #67442c !important; }
+    body.dark .bg-red-50 { background-color: #390009 !important; }
+    body.dark .text-gray-900 { color: #ffffff; }
+    body.dark .border-gray-200 { border-color: #404040; }
+    body.dark button:not(.theme-toggle) { color: white; font-size: 16px !important; font-weight: 500 !important; padding: 10px; }
+    body.dark button { color: white; }
+    body.light button:not(.theme-toggle) { font-size: 16px !important; font-weight: 500 !important; padding: 10px; }
+
+    /* Core Tailwind utilities for offline use */
+
+   .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 0.5rem; font-weight: 500; transition: all 0.2s; padding: 8px 16px; width: 100%; }
+   .btn-primary { background: linear-gradient(to right, #2563eb, #3b82f6); color: white; width: 100%; border: 0px; }
+   .btn-primary:hover { background: linear-gradient(to right, #1d4ed8, #2563eb); }
+   .btn-outline { border: 1px solid var(--color-border-light); background: var(--color-card-light); width: 100%; }
+   .btn-outline:hover { background: #f9fafb; }
+   body.dark .btn-outline { border-color: var(--color-border-dark); background: var(--color-card-dark); }
+   body.dark .btn-outline:hover { background: #374151; }
+   .card { background: var(--color-card-light); border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1rem; width: 100%; box-sizing: border-box; max-width: 100%; overflow-x: hidden; }
+   body.dark .card { background: var(--color-card-dark); }
+   .theme-toggle { position: fixed; top: 4rem; right: 1rem; z-index: 50; background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); border-radius: 9999px; padding: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; }
+   body.dark .theme-toggle { background: rgba(0, 0, 0, 0.2); }
+   .theme-toggle:hover { transform: scale(1.05); }
+   #cover, #quiz, #results { width: 100%; margin: 0; padding: 0; max-width: none; min-height: 100vh; display: flex; flex-direction: column; }
+   @media (min-width: 768px) { #cover, #quiz, #results { max-width: 48rem; margin: 0 auto; padding: 1rem; } }
+
+  </style>
+  <style>
+  </style>
+
+</head>
+<body class="p-4" onload="trackQuizOpen()">
+    <script>
+      function trackQuizOpen() {
+        if (quiz.id) {
+          const serverUrl = 'https://quiz-maker.serveo.net';
+          const trackingUrl = serverUrl + '/api/quizzes/' + quiz.id + '/track';
+
+          // Use sendBeacon for reliable tracking even if page closes
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon(trackingUrl);
+          } else {
+            // Fallback to fetch
+            fetch(trackingUrl, {
+              method: 'POST',
+              mode: 'no-cors',
+              credentials: 'omit'
+            }).catch(console.error);
+          }
+        }
+      }
+    </script>
+  <div class="container max-w-3xl mx-auto">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+      <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    </button>
+    
+    <div id="cover" class="py-12">
+      <div class="card text-center">
+        <h1 class="text-3xl font-bold mb-4">3</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">3</p>
+        <button
+          onclick="startQuiz()"
+          class="btn btn-primary"
+        >
+          Start Quiz
+        </button>
+      </div>
+    </div>
+
+    <div id="quiz" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Question <span id="current-question">1</span> of 1
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Time remaining: <span id="timer">30</span>s
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <h2 id="question-text" class="text-xl font-semibold mb-4"></h2>
+        <div id="question-image" class="mb-4"></div>
+        <div id="options" class="space-y-2"></div>
+      </div>
+
+      <div class="flex gap-2">
+        <button
+          id="skip-btn"
+          onclick="skipQuestion()"
+          class="btn btn-outline flex-1"
+        >
+          Skip Question
+        </button>
+        <button
+          id="submit-btn"
+          onclick="submitAnswer()"
+          class="btn btn-primary flex-1"
+          disabled
+        >
+          Submit Answer
+        </button>
+      </div>
+    </div>
+
+    <div id="results" class="hidden">
+      <div class="card text-center py-8">
+        <div class="text-6xl font-bold mb-4">
+          <span id="score">0</span>%
+        </div>
+        <p id="performance-message" class="text-2xl text-gray-600 dark:text-gray-400"></p>
+      </div>
+    </div>
+  
+  </div>
+  
+    <script>
+      const quiz = {"userId":2,"title":"3","description":"3","questions":[{"text":"3","options":["3","3"],"correctAnswer":1,"explanation":"3","timeLimit":30}],"performanceMessages":{"0":"You need more practice!","50":"Getting there!","80":"Great job!"},"randomizeQuestions":false,"id":1,"createdAt":"2025-05-19T04:35:05.030Z","lastAccessed":"2025-05-19T04:48:08.198Z"};
+      let currentQuestionIndex = 0;
+      let answers = [];
+      let timer;
+      let timeSpent = 0;
+      let selectedOption = null;
+
+      function startQuiz() {
+        document.getElementById('cover').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+
+        console.log("Quiz randomization status:", quiz.randomizeQuestions);
+
+        // If randomizeQuestions is enabled, shuffle the questions
+        if (quiz.randomizeQuestions) {
+          console.log("Randomizing questions...");
+          // Create a shuffled clone of the questions array with original indices
+          const questionsWithIndices = quiz.questions.map((q, index) => ({ 
+            question: q, 
+            originalIndex: index 
+          }));
+
+          // Fisher-Yates shuffle algorithm
+          for (let i = questionsWithIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [questionsWithIndices[i], questionsWithIndices[j]] = 
+            [questionsWithIndices[j], questionsWithIndices[i]];
+          }
+
+          // Replace questions with shuffled questions but keep track of original indices
+          quiz.shuffledIndices = questionsWithIndices.map(q => q.originalIndex);
+          quiz.originalQuestions = [...quiz.questions];
+          quiz.questions = questionsWithIndices.map(q => q.question);
+
+          console.log("Questions have been randomized");
+        } else {
+          console.log("Questions will be shown in original order");
+        }
+
+        showQuestion();
+      }
+
+      function showQuestion() {
+        const question = quiz.questions[currentQuestionIndex];
+        document.getElementById('current-question').textContent = currentQuestionIndex + 1;
+        document.getElementById('question-text').textContent = question.text;
+
+        // Display question image if available - using direct URL
+        const questionImageContainer = document.getElementById('question-image');
+        if (question.imageUrl) {
+          questionImageContainer.innerHTML = `<img src="${question.imageUrl}" alt="Question image" class="max-w-full rounded-lg">`;
+        } else {
+          questionImageContainer.innerHTML = '';
+        }
+
+        const optionsContainer = document.getElementById('options');
+        // Remove any existing explanation div
+        const existingExplanation = optionsContainer.parentNode.querySelector('.mt-4.p-4.bg-gray-50');
+        if (existingExplanation) {
+          existingExplanation.remove();
+        }
+
+        optionsContainer.innerHTML = question.options.map((option, index) => `
+          <button
+            onclick="selectOption(${index})"
+            class="btn btn-outline w-full text-left"
+          >
+            ${String.fromCharCode(65 + index)}: ${option}
+          </button>
+        `).join('');
+
+        // Reset the submit button for each question
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submit Answer';
+        submitBtn.onclick = function() {
+          submitAnswer();
+        };
+
+        startTimer(question.timeLimit || 30);
+      }
+
+      function selectOption(index) {
+        selectedOption = index;
+        const buttons = document.getElementById('options').children;
+        Array.from(buttons).forEach(btn => {
+          btn.classList.remove('bg-blue-50', 'border-blue-500');
+        });
+        buttons[index].classList.add('bg-blue-50', 'border-blue-500');
+
+        document.getElementById('submit-btn').disabled = false;
+      }
+
+      function skipQuestion() {
+        clearInterval(timer);
+        // Record that this question was skipped with explicit status
+        answers.push({
+          questionIndex: currentQuestionIndex,
+          selectedOption: null,
+          timeSpent,
+          status: 'skipped'
+        });
+
+        currentQuestionIndex++;
+        selectedOption = null;
+
+        if (currentQuestionIndex < quiz.questions.length) {
+          showQuestion();
+        } else {
+          showResults();
+        }
+      }
+
+      function startTimer(duration) {
+        clearInterval(timer);
+        timeSpent = 0;
+        let timeLeft = duration;
+
+        document.getElementById('timer').textContent = timeLeft;
+
+        timer = setInterval(() => {
+          timeLeft--;
+          timeSpent++;
+          document.getElementById('timer').textContent = timeLeft;
+
+          if (timeLeft <= 0) {
+            clearInterval(timer);
+            handleTimeExpired();
+          }
+        }, 1000);
+      }
+
+      function handleTimeExpired() {
+        // Handle case when time expires but no option is selected
+        if (selectedOption === null) {
+          answers.push({
+            questionIndex: currentQuestionIndex,
+            selectedOption: -1,  // Mark as no selection
+            timeSpent: quiz.questions[currentQuestionIndex].timeLimit || 30,
+            status: 'timeExpired'
+          });
+
+          showCorrectAnswer();
+          enableNextButton();
+          return;
+        }
+
+        submitAnswer('timeExpired');
+      }
+
+      function enableNextButton() {
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+          submitBtn.textContent = currentQuestionIndex < quiz.questions.length - 1 ? 'Next Question' : 'View Results';
+          submitBtn.onclick = handleNextQuestion;
+          submitBtn.disabled = false;
+        }
+      }
+
+      function showCorrectAnswer() {
+        const question = quiz.questions[currentQuestionIndex];
+        const optionsContainer = document.getElementById('options');
+        const buttons = optionsContainer.children;
+
+        // Show correct answer
+        Array.from(buttons).forEach((btn, index) => {
+          if (index === question.correctAnswer) {
+            btn.classList.add('bg-green-50', 'border-green-500', 'text-green-700');
+          }
+        });
+
+        // Show explanation if available
+        if (question.explanation) {
+          const explanationDiv = document.createElement('div');
+          explanationDiv.className = 'mt-4 p-4 bg-gray-50 rounded-lg';
+          explanationDiv.innerHTML = `<p class="font-semibold">Explanation:</p><p>${question.explanation}</p>`;
+          optionsContainer.parentNode.appendChild(explanationDiv);
+        }
+      }
+
+      function submitAnswer(forcedStatus = null) {
+        // Only proceed if an option has been selected or if a status is forced
+        if (selectedOption === null && !forcedStatus) {
+          return;
+        }
+
+        clearInterval(timer);
+        const question = quiz.questions[currentQuestionIndex];
+        const isCorrect = selectedOption === question.correctAnswer;
+
+        const optionsContainer = document.getElementById('options');
+        const buttons = optionsContainer.children;
+
+        // Show correct and wrong answers
+        Array.from(buttons).forEach((btn, index) => {
+          if (index === question.correctAnswer) {
+            btn.classList.add('bg-green-50', 'border-green-500', 'text-green-700');
+          } else if (index === selectedOption && !isCorrect) {
+            btn.classList.add('bg-red-50', 'border-red-500', 'text-red-700');
+          }
+        });
+
+        // Show explanation if available
+        if (question.explanation) {
+          const explanationDiv = document.createElement('div');
+          explanationDiv.className = 'mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg';
+          explanationDiv.innerHTML = `
+            <p class="font-medium">Explanation:</p>
+            <p class="text-gray-600 dark:text-gray-400">${question.explanation}</p>
+          `;
+          optionsContainer.parentNode.appendChild(explanationDiv);
+        }
+
+        // Update submit button based on question position
+        const submitBtn = document.getElementById('submit-btn');
+        if (currentQuestionIndex < quiz.questions.length - 1) {
+          submitBtn.textContent = 'Next Question';
+        } else {
+          submitBtn.textContent = 'View Results';
+        }
+        submitBtn.onclick = handleNextQuestion;
+        submitBtn.disabled = false;
+
+        // If a status is forced (like timeExpired), use that status
+        if (forcedStatus) {
+          // Add the answer with forced status but don't move to next question yet
+          answers.push({
+            questionIndex: currentQuestionIndex,
+            selectedOption: selectedOption,
+            timeSpent,
+            status: forcedStatus
+          });
+        }
+      }
+
+      function handleNextQuestion() {
+        // Only add answer if not already added (in case of time expired)
+        const existingAnswer = answers.find(a => a.questionIndex === currentQuestionIndex);
+
+        if (!existingAnswer) {
+          // Determine status based on selected option
+          const question = quiz.questions[currentQuestionIndex];
+          let status;
+
+          if (selectedOption === null) {
+            status = 'skipped';
+          } else if (selectedOption === question.correctAnswer) {
+            status = 'correct';
+          } else {
+            status = 'incorrect';
+          }
+
+          // Save the answer with the appropriate status
+          // For consistency, always use the current display index
+          // This ensures that skipped status works correctly in both randomized and non-randomized quizzes
+          answers.push({
+            questionIndex: currentQuestionIndex,
+            selectedOption,
+            timeSpent,
+            status
+          });
+        }
+
+        currentQuestionIndex++;
+        selectedOption = null; // Reset selected option for next question
+
+        if (currentQuestionIndex < quiz.questions.length) {
+          showQuestion();
+        } else {
+          showResults();
+        }
+      }
+
+      function showResults() {
+        document.getElementById('quiz').classList.add('hidden');
+        document.getElementById('results').classList.remove('hidden');
+
+        // Count answers by status
+        const correctAnswers = answers.filter(a => a.status === 'correct').length;
+        const skippedQuestions = answers.filter(a => a.status === 'skipped').length;
+        const timeExpiredQuestions = answers.filter(a => a.status === 'timeExpired').length;
+
+        const score = Math.round((correctAnswers / quiz.questions.length) * 100);
+        document.getElementById('score').textContent = score;
+
+        // Show performance message
+        const thresholds = Object.keys(quiz.performanceMessages)
+          .map(Number)
+          .sort((a, b) => b - a);
+
+        let message = quiz.performanceMessages[0];
+        for (const threshold of thresholds) {
+          if (score >= threshold) {
+            message = quiz.performanceMessages[threshold];
+            break;
+          }
+        }
+
+        document.getElementById('performance-message').textContent = message;
+
+        // Add review section
+        const resultsDiv = document.getElementById('results');
+        const reviewDiv = document.createElement('div');
+        reviewDiv.className = 'space-y-6 mt-8';
+
+        // Always use the questions in the order they were displayed to the user
+        const questionsToReview = quiz.questions;
+
+        questionsToReview.forEach((question, index) => {
+          const answer = answers.find(a => a.questionIndex === index) || {
+            questionIndex: index,
+            selectedOption: null,
+            timeSpent: 0,
+            status: 'skipped'
+          };
+
+          let statusClass = '';
+          let statusText = '';
+
+          switch (answer.status) {
+            case 'correct':
+              statusClass = 'text-green-600';
+              statusText = 'Correct';
+              break;
+            case 'incorrect':
+              statusClass = 'text-red-600';
+              statusText = 'Incorrect';
+              break;
+            case 'skipped':
+              statusClass = 'text-blue-600';
+              statusText = 'Skipped';
+              break;
+            case 'timeExpired':
+              statusClass = 'text-orange-600';
+              statusText = 'Time Expired';
+              break;
+          }
+
+          reviewDiv.innerHTML += `
+            <div class="card">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-medium">Question ${index + 1}</h3>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">
+                    Time spent: ${answer.timeSpent}s
+                  </span>
+                  <span class<span class="text-sm ${statusClass}">
+                    ${statusText}
+                  </span>
+                </div>
+              </div>
+
+              <p class="mb-4">${question.text}</p>
+              ${question.imageUrl ? `<img src="${question.imageUrl}" alt="Question image" class="mb-4 max-w-full rounded-lg">` : ''}
+
+              <div class="space-y-2">
+                ${question.options.map((option, optIndex) => `
+                  <div class="p-4 rounded-lg ${
+                    optIndex === question.correctAnswer
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
+                      : (answer.selectedOption !== null && optIndex === answer.selectedOption)
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-500'
+                      : 'border border-gray-200 dark:border-gray-700'
+                  }">
+                    ${String.fromCharCode(65 + optIndex)}: ${option}
+                  </div>
+                `).join('')}
+              </div>
+
+              ${answer.status === 'skipped' ? `
+                <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <p class="text-blue-600">This question was skipped.</p>
+                </div>
+              ` : ''}
+
+              ${answer.status === 'timeExpired' ? `
+                <div class="mt-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <p class="text-orange-600">Time expired for this question.</p>
+                </div>
+              ` : ''}
+
+              ${question.explanation ? `
+                <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <p class="font-medium">Explanation:</p>
+                  <p class="text-gray-600 dark:text-gray-400">${question.explanation}</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+
+        resultsDiv.appendChild(reviewDiv);
+      }
+    </script>
+  
+  <script>
+    // Try loading Tailwind from CDN with fallback
+    (function() {
+      var link = document.createElement('link');
+      link.href = 'https://cdn.tailwindcss.com';
+      link.rel = 'stylesheet';
+      link.onerror = function() {
+        console.log('Tailwind CDN failed, using embedded styles');
+      };
+      document.head.appendChild(link);
+    })();
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+
+    // Function to update icons based on current theme
+    function updateThemeIcons(isDark) {
+      if (isDark) {
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+      } else {
+        sunIcon.style.display = 'block';
+        moonIcon.style.display = 'none';
+      }
+    }
+
+    // Theme handling that only uses user choice
+    const savedTheme = localStorage.getItem('quiz-theme');
+
+    // Set initial theme - prefer saved theme if it exists, otherwise default to light
+    const initialTheme = savedTheme || 'light';
+
+    // Always ensure one theme class is set
+    document.body.classList.add(initialTheme);
+    updateThemeIcons(initialTheme === 'dark');
+
+    // No system theme listener - prioritize user choice
+
+    // Toggle theme when the button is clicked
+    themeToggle.addEventListener('click', () => {
+      const isDarkMode = document.body.classList.contains('dark');
+      const newTheme = isDarkMode ? 'light' : 'dark';
+
+      // Simple toggle between classes
+      document.body.classList.remove('dark', 'light');
+      document.body.classList.add(newTheme);
+
+      localStorage.setItem('quiz-theme', newTheme);
+      updateThemeIcons(newTheme === 'dark');
+    });
+  </script>
+</body>
+</html>
