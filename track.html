@@ -4,38 +4,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Tracking</title>
+    <title>Quiz Usage Tracking Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
         }
-        .tracking-info {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 600px;
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
         }
-        .stat {
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .dashboard {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .current-quiz {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .current-quiz h2 {
+            margin: 0 0 15px 0;
+            font-size: 1.5rem;
+        }
+        .quiz-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .info-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .info-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .quiz-link {
+            color: #fff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .quiz-link:hover {
+            opacity: 0.8;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .quiz-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .quiz-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
+            align-items: center;
         }
-        .count {
+        .usage-count {
+            background: rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
-            color: #2563eb;
+        }
+        .quiz-details {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .detail-row {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .quiz-url {
+            color: white;
+            text-decoration: none;
+            word-break: break-all;
+            display: block;
+            margin-top: 5px;
+        }
+        .quiz-url:hover {
+            opacity: 0.8;
+        }
+        .no-data {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 40px;
+        }
+        .total-stats {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .total-stats h2 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+        .stats-numbers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .stat-number {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .refresh-note {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 20px;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="tracking-info">
-        <h1>Quiz Usage Tracking</h1>
-        <div id="quiz-info"></div>
-        <div id="usage-stats"></div>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Quiz Usage Dashboard</h1>
+            <p>Real-time tracking of quiz interactions and usage statistics</p>
+        </div>
+
+        <div id="currentQuizSection" class="dashboard" style="display: none;">
+            <div class="current-quiz">
+                <h2>🎯 Current Quiz Access</h2>
+                <div class="quiz-info">
+                    <div class="info-item">
+                        <div class="info-label">Quiz Name</div>
+                        <div class="info-value" id="currentQuizName">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Quiz ID</div>
+                        <div class="info-value" id="currentQuizId">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Access Time</div>
+                        <div class="info-value" id="currentAccessTime">-</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Quiz Link</div>
+                        <div class="info-value">
+                            <a href="#" id="currentQuizLink" class="quiz-link" target="_blank">Open Quiz</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="total-stats">
+                <h2>📈 Overall Statistics</h2>
+                <div class="stats-numbers">
+                    <div class="stat-number">
+                        <div class="stat-value" id="totalQuizzes">0</div>
+                        <div class="stat-label">Total Quizzes</div>
+                    </div>
+                    <div class="stat-number">
+                        <div class="stat-value" id="totalUsage">0</div>
+                        <div class="stat-label">Total Usage</div>
+                    </div>
+                    <div class="stat-number">
+                        <div class="stat-value" id="mostUsedCount">0</div>
+                        <div class="stat-label">Most Used</div>
+                    </div>
+                    <div class="stat-number">
+                        <div class="stat-value" id="todayUsage">0</div>
+                        <div class="stat-label">Today's Usage</div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 style="margin-bottom: 20px; color: #333;">🎮 Quiz Statistics</h2>
+            <div id="quizStats" class="stats-grid">
+                <div class="no-data">No quiz data available yet. Start using quizzes to see statistics!</div>
+            </div>
+        </div>
+
+        <div class="refresh-note">
+            📱 This dashboard updates automatically when quizzes are accessed
+        </div>
     </div>
 
     <script>
@@ -44,70 +252,145 @@
         const quizName = urlParams.get('quiz');
         const quizId = urlParams.get('id');
         const timestamp = urlParams.get('timestamp');
+        const quizUrl = urlParams.get('quizUrl');
 
-        if (quizName && quizId) {
-            // Display current quiz info
-            document.getElementById('quiz-info').innerHTML = `
-                <div class="stat">
-                    <span>Quiz Name:</span>
-                    <span class="count">${decodeURIComponent(quizName)}</span>
-                </div>
-                <div class="stat">
-                    <span>Quiz ID:</span>
-                    <span class="count">${quizId}</span>
-                </div>
-                <div class="stat">
-                    <span>Accessed:</span>
-                    <span class="count">${new Date(parseInt(timestamp)).toLocaleString()}</span>
-                </div>
-            `;
+        function updateCurrentQuizInfo() {
+            if (quizName && quizId) {
+                // Show current quiz section
+                document.getElementById('currentQuizSection').style.display = 'block';
+                
+                // Update current quiz info
+                document.getElementById('currentQuizName').textContent = decodeURIComponent(quizName);
+                document.getElementById('currentQuizId').textContent = quizId;
+                document.getElementById('currentAccessTime').textContent = new Date(parseInt(timestamp)).toLocaleString();
+                
+                if (quizUrl) {
+                    const linkElement = document.getElementById('currentQuizLink');
+                    linkElement.href = decodeURIComponent(quizUrl);
+                    linkElement.textContent = 'Open Quiz';
+                } else {
+                    document.getElementById('currentQuizLink').textContent = 'URL not available';
+                }
 
-            // Store usage in localStorage for simple tracking
-            const storageKey = `quiz_${quizId}_usage`;
-            let usageCount = parseInt(localStorage.getItem(storageKey) || '0');
-            usageCount++;
-            localStorage.setItem(storageKey, usageCount.toString());
-
-            // Store quiz name for reference
-            localStorage.setItem(`quiz_${quizId}_name`, decodeURIComponent(quizName));
-
-            // Display all tracked quizzes
-            displayAllUsageStats();
+                // Update usage count
+                trackQuizUsage();
+            }
         }
 
-        function displayAllUsageStats() {
-            const statsContainer = document.getElementById('usage-stats');
-            let statsHTML = '<h2>All Quiz Usage Statistics</h2>';
+        function trackQuizUsage() {
+            const storageKey = `quiz_${quizId}_usage`;
+            const nameKey = `quiz_${quizId}_name`;
+            const urlKey = `quiz_${quizId}_url`;
+            const lastAccessKey = `quiz_${quizId}_lastAccess`;
+            const firstAccessKey = `quiz_${quizId}_firstAccess`;
 
-            // Get all quiz usage data from localStorage
+            let usageCount = parseInt(localStorage.getItem(storageKey) || '0');
+            usageCount++;
+            
+            // Store quiz data
+            localStorage.setItem(storageKey, usageCount.toString());
+            localStorage.setItem(nameKey, decodeURIComponent(quizName));
+            localStorage.setItem(lastAccessKey, timestamp);
+            
+            if (quizUrl) {
+                localStorage.setItem(urlKey, decodeURIComponent(quizUrl));
+            }
+            
+            // Set first access time if not exists
+            if (!localStorage.getItem(firstAccessKey)) {
+                localStorage.setItem(firstAccessKey, timestamp);
+            }
+
+            // Update daily usage
+            const today = new Date().toDateString();
+            const dailyKey = `daily_usage_${today}`;
+            let dailyUsage = parseInt(localStorage.getItem(dailyKey) || '0');
+            dailyUsage++;
+            localStorage.setItem(dailyKey, dailyUsage.toString());
+        }
+
+        function displayAllQuizStats() {
+            const statsContainer = document.getElementById('quizStats');
             const allQuizzes = {};
+            let totalUsage = 0;
+            let maxUsage = 0;
+
+            // Collect all quiz data
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
                 if (key.startsWith('quiz_') && key.endsWith('_usage')) {
-                    const quizId = key.match(/quiz_(.+)_usage/)[1];
-                    const usage = localStorage.getItem(key);
-                    const name = localStorage.getItem(`quiz_${quizId}_name`) || `Quiz ${quizId}`;
-                    allQuizzes[quizId] = { name, usage: parseInt(usage) };
+                    const quizIdFromKey = key.match(/quiz_(.+)_usage/)[1];
+                    const usage = parseInt(localStorage.getItem(key));
+                    const name = localStorage.getItem(`quiz_${quizIdFromKey}_name`) || `Quiz ${quizIdFromKey}`;
+                    const url = localStorage.getItem(`quiz_${quizIdFromKey}_url`);
+                    const lastAccess = localStorage.getItem(`quiz_${quizIdFromKey}_lastAccess`);
+                    const firstAccess = localStorage.getItem(`quiz_${quizIdFromKey}_firstAccess`);
+
+                    allQuizzes[quizIdFromKey] = {
+                        name,
+                        usage,
+                        url,
+                        lastAccess: lastAccess ? new Date(parseInt(lastAccess)) : null,
+                        firstAccess: firstAccess ? new Date(parseInt(firstAccess)) : null
+                    };
+
+                    totalUsage += usage;
+                    maxUsage = Math.max(maxUsage, usage);
                 }
             }
 
-            // Display stats
-            for (const [id, data] of Object.entries(allQuizzes)) {
-                statsHTML += `
-                    <div class="stat">
-                        <span>${data.name} (ID: ${id})</span>
-                        <span class="count">${data.usage} uses</span>
-                    </div>
-                `;
+            // Update overall stats
+            document.getElementById('totalQuizzes').textContent = Object.keys(allQuizzes).length;
+            document.getElementById('totalUsage').textContent = totalUsage;
+            document.getElementById('mostUsedCount').textContent = maxUsage;
+
+            // Calculate today's usage
+            const today = new Date().toDateString();
+            const todayUsage = parseInt(localStorage.getItem(`daily_usage_${today}`) || '0');
+            document.getElementById('todayUsage').textContent = todayUsage;
+
+            // Display quiz cards
+            if (Object.keys(allQuizzes).length === 0) {
+                statsContainer.innerHTML = '<div class="no-data">No quiz data available yet. Start using quizzes to see statistics!</div>';
+                return;
             }
 
-            statsContainer.innerHTML = statsHTML;
+            // Sort quizzes by usage (descending)
+            const sortedQuizzes = Object.entries(allQuizzes).sort((a, b) => b[1].usage - a[1].usage);
+
+            statsContainer.innerHTML = sortedQuizzes.map(([id, data]) => `
+                <div class="quiz-card">
+                    <h3>
+                        ${data.name}
+                        <span class="usage-count">${data.usage} uses</span>
+                    </h3>
+                    <div class="quiz-details">
+                        <div class="detail-row">
+                            <strong>Quiz ID:</strong> ${id}
+                        </div>
+                        <div class="detail-row">
+                            <strong>First Access:</strong> ${data.firstAccess ? data.firstAccess.toLocaleString() : 'Unknown'}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Last Access:</strong> ${data.lastAccess ? data.lastAccess.toLocaleString() : 'Unknown'}
+                        </div>
+                        ${data.url ? `
+                        <div class="detail-row">
+                            <strong>Quiz Link:</strong>
+                            <a href="${data.url}" class="quiz-url" target="_blank">${data.url}</a>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
         }
 
-        // If no parameters, just show existing stats
-        if (!quizName && !quizId) {
-            displayAllUsageStats();
-        }
+        // Initialize dashboard
+        updateCurrentQuizInfo();
+        displayAllQuizStats();
+
+        // Auto-refresh every 30 seconds to catch new usage
+        setInterval(displayAllQuizStats, 30000);
     </script>
 </body>
 </html>
