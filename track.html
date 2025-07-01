@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .tracking-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .count {
+            font-weight: bold;
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="tracking-info">
+        <h1>Quiz Usage Tracking</h1>
+        <div id="quiz-info"></div>
+        <div id="usage-stats"></div>
+    </div>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const quizName = urlParams.get('quiz');
+        const quizId = urlParams.get('id');
+        const timestamp = urlParams.get('timestamp');
+
+        if (quizName && quizId) {
+            // Display current quiz info
+            document.getElementById('quiz-info').innerHTML = `
+                <div class="stat">
+                    <span>Quiz Name:</span>
+                    <span class="count">${decodeURIComponent(quizName)}</span>
+                </div>
+                <div class="stat">
+                    <span>Quiz ID:</span>
+                    <span class="count">${quizId}</span>
+                </div>
+                <div class="stat">
+                    <span>Accessed:</span>
+                    <span class="count">${new Date(parseInt(timestamp)).toLocaleString()}</span>
+                </div>
+            `;
+
+            // Store usage in localStorage for simple tracking
+            const storageKey = `quiz_${quizId}_usage`;
+            let usageCount = parseInt(localStorage.getItem(storageKey) || '0');
+            usageCount++;
+            localStorage.setItem(storageKey, usageCount.toString());
+
+            // Store quiz name for reference
+            localStorage.setItem(`quiz_${quizId}_name`, decodeURIComponent(quizName));
+
+            // Display all tracked quizzes
+            displayAllUsageStats();
+        }
+
+        function displayAllUsageStats() {
+            const statsContainer = document.getElementById('usage-stats');
+            let statsHTML = '<h2>All Quiz Usage Statistics</h2>';
+
+            // Get all quiz usage data from localStorage
+            const allQuizzes = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('quiz_') && key.endsWith('_usage')) {
+                    const quizId = key.match(/quiz_(.+)_usage/)[1];
+                    const usage = localStorage.getItem(key);
+                    const name = localStorage.getItem(`quiz_${quizId}_name`) || `Quiz ${quizId}`;
+                    allQuizzes[quizId] = { name, usage: parseInt(usage) };
+                }
+            }
+
+            // Display stats
+            for (const [id, data] of Object.entries(allQuizzes)) {
+                statsHTML += `
+                    <div class="stat">
+                        <span>${data.name} (ID: ${id})</span>
+                        <span class="count">${data.usage} uses</span>
+                    </div>
+                `;
+            }
+
+            statsContainer.innerHTML = statsHTML;
+        }
+
+        // If no parameters, just show existing stats
+        if (!quizName && !quizId) {
+            displayAllUsageStats();
+        }
+    </script>
+</body>
+</html>
