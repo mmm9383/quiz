@@ -43,26 +43,26 @@
     .quiz-link:hover { text-decoration: underline; }
     .loading, .error { padding: 20px; text-align: center; }
   </style>
-
- 
-     <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+<!-- Load Firebase SDK (compat version) -->
+<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
-<script>
-  const firebaseConfig = {
-  apiKey: "AIzaSyCPdEEdWSjfYrtaaB9MioxOh9evAbVz3Mc",
-  authDomain: "fetchtracker.firebaseapp.com",
-  databaseURL: "https://fetchtracker-default-rtdb.firebaseio.com",
-  projectId: "fetchtracker",
-  storageBucket: "fetchtracker.firebasestorage.app",
-  messagingSenderId: "770381576602",
-  appId: "1:770381576602:web:680b74d24445e736742223"
-};
 
-  // ✅ Correct for static HTML
+<script>
+  // ✅ Your Firebase config (safe to expose in public frontend)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCPdEEdWSjfYrtaaB9MioxOh9evAbVz3Mc",
+    authDomain: "fetchtracker.firebaseapp.com",
+    databaseURL: "https://fetchtracker-default-rtdb.firebaseio.com",
+    projectId: "fetchtracker",
+    storageBucket: "fetchtracker.firebasestorage.app",
+    messagingSenderId: "770381576602",
+    appId: "1:770381576602:web:680b74d24445e736742223"
+  };
+
+  // ✅ Initialize Firebase (compat syntax)
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 </script>
-  </script>
 </head>
 <body>
   <div class="container">
