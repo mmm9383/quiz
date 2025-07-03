@@ -4,135 +4,410 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Quiz Management Dashboard</title>
+  <!-- Load Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Load Firebase SDK (compat version) -->
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    :root {
+      --primary-color: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary-color: #10b981;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+      --info-color: #3b82f6;
+      --dark-color: #1e293b;
+      --light-color: #f8fafc;
+      --gray-color: #94a3b8;
+      --success-color: #10b981;
+      --border-radius: 12px;
+      --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { 
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #f1f5f9;
+      color: var(--dark-color);
+      line-height: 1.6;
       min-height: 100vh;
-      color: white;
     }
-    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    .container {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
     .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 15px;
-      backdrop-filter: blur(10px);
-    }
-    .dashboard-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .dashboard-card {
-      background: rgba(255, 255, 255, 0.15);
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .dashboard-card .number { font-size: 2.5em; font-weight: bold; margin-bottom: 10px; }
-    .dashboard-card .label { font-size: 0.9em; opacity: 0.8; }
-    .controls {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 30px;
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--box-shadow);
       display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
+      justify-content: space-between;
       align-items: center;
     }
-    .search-box, .filter-select {
-      padding: 10px 15px;
-      border: none;
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--dark-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header p {
+      color: var(--gray-color);
+      font-size: 16px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 24px;
+      box-shadow: var(--box-shadow);
+      transition: var(--transition);
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-lg {
+      grid-column: span 8;
+    }
+
+    .card-md {
+      grid-column: span 4;
+    }
+
+    .card-sm {
+      grid-column: span 3;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-color);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--dark-color);
+      margin-bottom: 8px;
+    }
+
+    .card-change {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-change.positive {
+      color: var(--success-color);
+    }
+
+    .card-change.negative {
+      color: var(--danger-color);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+
+    .controls {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--box-shadow);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .search-box {
+      padding: 10px 16px;
+      border: 1px solid #e2e8f0;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
+      background: white;
+      color: var(--dark-color);
+      font-size: 14px;
+      min-width: 280px;
+      transition: var(--transition);
+    }
+
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-box::placeholder {
+      color: #94a3b8;
+    }
+
+    .filter-select {
+      padding: 10px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      color: var(--dark-color);
       font-size: 14px;
       min-width: 200px;
+      transition: var(--transition);
     }
-    .search-box::placeholder { color: rgba(255, 255, 255, 0.7); }
-    .filter-select option { background: #444; color: white; }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
     .btn {
       padding: 10px 20px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s;
-      text-decoration: none;
-      display: inline-block;
-      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
-    .btn-primary { background: #4CAF50; color: white; }
-    .btn-primary:hover { background: #45a049; transform: translateY(-2px); }
-    .btn-danger { background: #f44336; color: white; }
-    .btn-danger:hover { background: #da190b; transform: translateY(-2px); }
-    .btn-warning { background: #ff9800; color: white; }
-    .btn-warning:hover { background: #e68900; transform: translateY(-2px); }
-    .btn-info { background: #2196F3; color: white; }
-    .btn-info:hover { background: #1976D2; transform: translateY(-2px); }
-    .btn-small { padding: 5px 10px; font-size: 12px; }
-    .current-access, .quiz-info {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 25px;
-      border-radius: 12px;
-      margin-bottom: 30px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+
+    .btn-primary {
+      background: var(--primary-color);
+      color: white;
     }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-danger {
+      background: var(--danger-color);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+    }
+
+    .btn-warning {
+      background: var(--warning-color);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #d97706;
+      transform: translateY(-2px);
+    }
+
+    .btn-info {
+      background: var(--info-color);
+      color: white;
+    }
+
+    .btn-info:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+    }
+
+    .btn-success {
+      background: var(--success-color);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+      transform: translateY(-2px);
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #e2e8f0;
+      color: var(--dark-color);
+    }
+
+    .btn-outline:hover {
+      background: #f8fafc;
+      transform: translateY(-2px);
+    }
+
+    .current-quiz {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--box-shadow);
+    }
+
+    .current-quiz-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      margin-top: 16px;
     }
+
     .stat-card {
-      background: rgba(255, 255, 255, 0.15);
+      background: white;
+      border-radius: var(--border-radius);
       padding: 20px;
-      border-radius: 12px;
-      transition: all 0.3s;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: var(--transition);
+      box-shadow: var(--box-shadow);
       position: relative;
     }
+
     .stat-card:hover {
       transform: translateY(-5px);
-      background: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
-    .stat-label { font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
-    .stat-value { font-size: 2em; font-weight: bold; margin-bottom: 10px; }
-    .quiz-meta { font-size: 14px; margin-top: 15px; opacity: 0.9; }
-    .quiz-meta div { margin-bottom: 5px; }
-    .quiz-link { color: #a3bffa; text-decoration: none; }
-    .quiz-link:hover { text-decoration: underline; }
-    .loading, .error { padding: 20px; text-align: center; }
-    .card-actions {
+
+    .stat-label {
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-size: 16px;
       display: flex;
+      align-items: center;
       gap: 8px;
-      margin-top: 15px;
-      flex-wrap: wrap;
     }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .quiz-meta {
+      font-size: 14px;
+      margin-top: 16px;
+      color: var(--gray-color);
+    }
+
+    .quiz-meta div {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .quiz-meta strong {
+      color: var(--dark-color);
+    }
+
     .progress-bar {
-      background: rgba(255, 255, 255, 0.2);
+      background: #e2e8f0;
       border-radius: 10px;
       height: 8px;
       overflow: hidden;
-      margin: 10px 0;
+      margin: 12px 0;
     }
+
     .progress-fill {
-      background: linear-gradient(90deg, #4CAF50, #45a049);
+      background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
       height: 100%;
-      transition: width 0.3s;
+      transition: width 0.6s ease;
+      border-radius: 10px;
     }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .top-quizzes {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--box-shadow);
+    }
+
+    .top-quiz-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .top-quiz-rank {
+      font-weight: 700;
+      width: 30px;
+      color: var(--gray-color);
+    }
+
+    .top-quiz-name {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .top-quiz-stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .top-quiz-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 60px;
+    }
+
+    .top-quiz-stat-value {
+      font-weight: 700;
+    }
+
+    .top-quiz-stat-label {
+      font-size: 12px;
+      color: var(--gray-color);
+    }
+
     .modal {
       display: none;
       position: fixed;
@@ -144,134 +419,283 @@
       background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(5px);
     }
+
     .modal-content {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      margin: 15% auto;
-      padding: 30px;
-      border-radius: 15px;
+      background: white;
+      margin: 10% auto;
+      padding: 32px;
+      border-radius: var(--border-radius);
       width: 90%;
       max-width: 500px;
-      color: white;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-message {
+      margin-bottom: 24px;
+      color: var(--gray-color);
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
     .close {
-      color: #aaa;
+      color: var(--gray-color);
       float: right;
-      font-size: 28px;
+      font-size: 24px;
       font-weight: bold;
       cursor: pointer;
-      position: absolute;
-      right: 20px;
-      top: 15px;
+      transition: var(--transition);
     }
-    .close:hover { color: white; }
-    .export-section {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      text-align: center;
+
+    .close:hover {
+      color: var(--dark-color);
     }
-    .sort-options {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-left: auto;
-    }
+
     .alert {
-      padding: 15px;
-      margin-bottom: 20px;
+      padding: 16px;
+      margin-bottom: 24px;
       border-radius: 8px;
       display: none;
+      border-left: 4px solid transparent;
+      background: white;
+      box-shadow: var(--box-shadow);
     }
-    .alert-success { background: rgba(76, 175, 80, 0.3); border-left: 4px solid #4CAF50; }
-    .alert-error { background: rgba(244, 67, 54, 0.3); border-left: 4px solid #f44336; }
-    .alert-warning { background: rgba(255, 152, 0, 0.3); border-left: 4px solid #ff9800; }
+
+    .alert-success {
+      border-left-color: var(--success-color);
+    }
+
+    .alert-error {
+      border-left-color: var(--danger-color);
+    }
+
+    .alert-warning {
+      border-left-color: var(--warning-color);
+    }
+
+    .alert-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--gray-color);
+      border-bottom: 2px solid transparent;
+      transition: var(--transition);
+    }
+
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .timeframe-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .timeframe-stat {
+      background: white;
+      border-radius: var(--border-radius);
+      padding: 16px;
+      box-shadow: var(--box-shadow);
+      text-align: center;
+    }
+
+    .timeframe-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .timeframe-stat-label {
+      font-size: 14px;
+      color: var(--gray-color);
+    }
+
+    .timeframe-stat-change {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .timeframe-stat-change.positive {
+      color: var(--success-color);
+    }
+
+    .timeframe-stat-change.negative {
+      color: var(--danger-color);
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(6, 1fr);
+      }
+      .card-lg {
+        grid-column: span 6;
+      }
+      .card-md {
+        grid-column: span 3;
+      }
+      .card-sm {
+        grid-column: span 2;
+      }
+    }
+
     @media (max-width: 768px) {
-      .dashboard-stats { grid-template-columns: 1fr 1fr; }
-      .controls { flex-direction: column; align-items: stretch; }
-      .search-box, .filter-select { min-width: auto; }
-      .sort-options { margin-left: 0; justify-content: center; }
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .card-lg, .card-md, .card-sm {
+        grid-column: span 2;
+      }
+      .timeframe-stats {
+        grid-template-columns: 1fr;
+      }
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-box, .filter-select {
+        width: 100%;
+      }
     }
   </style>
-<!-- Load Firebase SDK (compat version) -->
-<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
-
-<script>
-  // ✅ Your Firebase config
-  const firebaseConfig = {
-    apiKey: "AIzaSyCPdEEdWSjfYrtaaB9MioxOh9evAbVz3Mc",
-    authDomain: "fetchtracker.firebaseapp.com",
-    databaseURL: "https://fetchtracker-default-rtdb.firebaseio.com",
-    projectId: "fetchtracker",
-    storageBucket: "fetchtracker.firebasestorage.app",
-    messagingSenderId: "770381576602",
-    appId: "1:770381576602:web:680b74d24445e736742223"
-  };
-
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🎯 Quiz Management Dashboard</h1>
-      <p>Complete quiz tracking and management system</p>
+      <div>
+        <h1>📊 Quiz Analytics Dashboard</h1>
+        <p>Comprehensive tracking and management of quiz performance</p>
+      </div>
+      <div id="current-date" style="font-weight: 600;"></div>
     </div>
 
     <div id="alerts"></div>
 
-    <div class="dashboard-stats">
-      <div class="dashboard-card">
-        <div class="number" id="total-quizzes">0</div>
-        <div class="label">Total Quizzes</div>
+    <!-- Timeframe Stats -->
+    <div class="dashboard-card">
+      <div class="tabs">
+        <div class="tab active" onclick="changeTimeframeTab('daily')">Daily</div>
+        <div class="tab" onclick="changeTimeframeTab('weekly')">Weekly</div>
+        <div class="tab" onclick="changeTimeframeTab('monthly')">Monthly</div>
       </div>
-      <div class="dashboard-card">
-        <div class="number" id="total-opens">0</div>
-        <div class="label">Total Opens</div>
-      </div>
-      <div class="dashboard-card">
-        <div class="number" id="total-completions">0</div>
-        <div class="label">Total Completions</div>
-      </div>
-      <div class="dashboard-card">
-        <div class="number" id="avg-score">0%</div>
-        <div class="label">Average Score</div>
+      
+      <div class="timeframe-stats">
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-opens">0</div>
+          <div class="timeframe-stat-label">Opens</div>
+          <div class="timeframe-stat-change" id="timeframe-opens-change"></div>
+        </div>
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-completions">0</div>
+          <div class="timeframe-stat-label">Completions</div>
+          <div class="timeframe-stat-change" id="timeframe-completions-change"></div>
+        </div>
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-avg-score">0%</div>
+          <div class="timeframe-stat-label">Avg Score</div>
+          <div class="timeframe-stat-change" id="timeframe-avg-score-change"></div>
+        </div>
       </div>
     </div>
 
-    <div id="current-quiz" class="current-access">
+    <!-- Dashboard Stats -->
+    <div class="dashboard-grid">
+      <div class="dashboard-card card-sm">
+        <div class="card-title">📋 Total Quizzes</div>
+        <div class="card-value" id="total-quizzes">0</div>
+        <div class="card-change" id="quizzes-change"></div>
+      </div>
+      <div class="dashboard-card card-sm">
+        <div class="card-title">🚀 Total Opens</div>
+        <div class="card-value" id="total-opens">0</div>
+        <div class="card-change" id="opens-change"></div>
+      </div>
+      <div class="dashboard-card card-sm">
+        <div class="card-title">✅ Total Completions</div>
+        <div class="card-value" id="total-completions">0</div>
+        <div class="card-change" id="completions-change"></div>
+      </div>
+      <div class="dashboard-card card-sm">
+        <div class="card-title">🎯 Average Score</div>
+        <div class="card-value" id="avg-score">0%</div>
+        <div class="card-change" id="score-change"></div>
+      </div>
+    </div>
+
+    <!-- Charts and Top Quizzes -->
+    <div class="dashboard-grid">
+      <div class="dashboard-card card-lg">
+        <div class="card-title">📈 Activity Trends</div>
+        <div class="chart-container">
+          <canvas id="activityChart"></canvas>
+        </div>
+      </div>
+      <div class="dashboard-card card-md">
+        <div class="card-title">🏆 Top Quizzes</div>
+        <div id="top-quizzes-list"></div>
+      </div>
+    </div>
+
+    <!-- Current Quiz -->
+    <div id="current-quiz" class="current-quiz">
+      <div class="current-quiz-title">📝 Current Quiz Activity</div>
       <div class="loading">Loading quiz information...</div>
     </div>
 
-    <div class="export-section">
-      <h3>📊 Data Export</h3>
-      <button class="btn btn-info" onclick="exportToCSV()">Export to CSV</button>
-      <button class="btn btn-info" onclick="exportToJSON()">Export to JSON</button>
-    </div>
-
+    <!-- Controls -->
     <div class="controls">
-      <input type="text" class="search-box" id="search-input" placeholder="🔍 Search quizzes..." onkeyup="filterQuizzes()">
+      <input type="text" class="search-box" id="search-input" placeholder="Search quizzes..." onkeyup="filterQuizzes()">
       <select class="filter-select" id="filter-select" onchange="filterQuizzes()">
         <option value="all">All Quizzes</option>
         <option value="completed">Completed Only</option>
         <option value="not-completed">Not Completed</option>
         <option value="high-score">High Score (>80%)</option>
       </select>
-      <div class="sort-options">
-        <button class="btn btn-small btn-primary" onclick="sortQuizzes('name')">Sort by Name</button>
-        <button class="btn btn-small btn-primary" onclick="sortQuizzes('lastAccessed')">Sort by Date</button>
-        <button class="btn btn-small btn-primary" onclick="sortQuizzes('averageScore')">Sort by Score</button>
+      <div style="display: flex; gap: 8px; margin-left: auto;">
+        <button class="btn btn-outline" onclick="exportToCSV()">📊 Export CSV</button>
+        <button class="btn btn-outline" onclick="exportToJSON()">📁 Export JSON</button>
+        <button class="btn btn-danger" onclick="showClearAllModal()">🗑️ Delete All Data</button>
       </div>
-      <button class="btn btn-danger" onclick="showClearAllModal()">🗑️ Clear All Data</button>
     </div>
 
-    <div class="quiz-info">
-      <h2>📚 Quiz Statistics</h2>
+    <!-- Quiz Stats Grid -->
+    <div class="dashboard-card">
+      <h2 style="margin-bottom: 16px;">📚 All Quizzes</h2>
       <div id="stats-grid" class="stat-grid">
         <div class="loading">Loading statistics...</div>
       </div>
@@ -282,32 +706,89 @@
   <div id="deleteModal" class="modal">
     <div class="modal-content">
       <span class="close" onclick="closeModal()">&times;</span>
-      <h2>⚠️ Confirm Deletion</h2>
-      <p id="deleteMessage">Are you sure you want to delete this quiz data?</p>
-      <div style="margin-top: 20px;">
-        <button class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
-        <button class="btn btn-primary" onclick="closeModal()" style="margin-left: 10px;">Cancel</button>
+      <div class="modal-title">⚠️ Confirm Deletion</div>
+      <div class="modal-message" id="deleteMessage">Are you sure you want to delete this quiz data?</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
       </div>
     </div>
   </div>
 
   <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCPdEEdWSjfYrtaaB9MioxOh9evAbVz3Mc",
+      authDomain: "fetchtracker.firebaseapp.com",
+      databaseURL: "https://fetchtracker-default-rtdb.firebaseio.com",
+      projectId: "fetchtracker",
+      storageBucket: "fetchtracker.firebasestorage.app",
+      messagingSenderId: "770381576602",
+      appId: "1:770381576602:web:680b74d24445e736742223"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Global variables
     let currentQuizData = [];
     let currentDeleteId = null;
     let currentDeleteType = 'single';
     let currentSort = 'lastAccessed';
     let sortDirection = 'desc';
+    let activityChart = null;
+    let currentTimeframe = 'daily';
+    let previousStats = {
+      totalQuizzes: 0,
+      totalOpens: 0,
+      totalCompletions: 0,
+      avgScore: 0,
+      timeframeOpens: 0,
+      timeframeCompletions: 0,
+      timeframeAvgScore: 0
+    };
 
+    // Initialize the dashboard
+    function initDashboard() {
+      // Set current date
+      document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      
+      // Process any tracking data from URL
+      processTrackingData();
+      
+      // Load all stats
+      displayAllStats();
+      updateDashboardStats();
+      updateTimeframeStats();
+      updateTopQuizzes();
+      
+      // Set up auto-refresh
+      setInterval(() => {
+        displayAllStats();
+        updateDashboardStats();
+        updateTimeframeStats();
+        updateTopQuizzes();
+      }, 30000); // Refresh every 30 seconds
+    }
+
+    // Show alert message
     function showAlert(message, type = 'success') {
       const alertsDiv = document.getElementById('alerts');
       const alertDiv = document.createElement('div');
       alertDiv.className = `alert alert-${type}`;
-      alertDiv.innerHTML = message;
-      alertDiv.style.display = 'block';
+      alertDiv.innerHTML = `
+        <div class="alert-message">
+          ${type === 'success' ? '✓' : type === 'error' ? '✗' : '⚠'} ${message}
+        </div>
+      `;
       alertsDiv.appendChild(alertDiv);
       setTimeout(() => alertDiv.remove(), 5000);
     }
 
+    // Process tracking data from URL parameters
     function processTrackingData() {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -322,13 +803,6 @@
         if (quizId) {
           updateCurrentQuizDisplay(quizName, quizId, timestamp, eventType, score, totalQuestions);
           recordQuizAccess(quizId, quizName, eventType, score, totalQuestions, timeSpent);
-          setTimeout(() => {
-            displayAllStats();
-            updateDashboardStats();
-          }, 1000);
-        } else {
-          displayAllStats();
-          updateDashboardStats();
         }
       } catch (error) {
         console.error('Error processing tracking data:', error);
@@ -336,6 +810,7 @@
       }
     }
 
+    // Update the current quiz display
     function updateCurrentQuizDisplay(name, id, timestamp, eventType, score, totalQuestions) {
       const currentQuizDiv = document.getElementById('current-quiz');
       if (!id) {
@@ -350,7 +825,7 @@
       }[eventType] || eventType;
 
       currentQuizDiv.innerHTML = `
-        <div style="font-size: 1.3em; margin-bottom: 15px;">📝 Current Quiz Activity</div>
+        <div class="current-quiz-title">📝 Current Quiz Activity</div>
         ${name ? `<div style="margin-bottom: 8px;"><strong>Quiz:</strong> ${decodeURIComponent(name)}</div>` : ''}
         <div style="margin-bottom: 8px;"><strong>ID:</strong> ${id}</div>
         <div style="margin-bottom: 8px;"><strong>Event:</strong> ${eventTypeDisplay}</div>
@@ -359,6 +834,7 @@
       `;
     }
 
+    // Record quiz access in Firebase
     function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent) {
       try {
         const now = new Date().toISOString();
@@ -367,6 +843,35 @@
         ref.once('value').then(snapshot => {
           const quizData = snapshot.val() || {};
           
+          // Update access history for timeframe stats
+          const accessHistory = quizData.accessHistory || {};
+          const today = new Date().toISOString().split('T')[0];
+          const week = getWeekNumber(new Date());
+          const month = new Date().getMonth() + 1;
+          const year = new Date().getFullYear();
+          
+          // Initialize if not exists
+          if (!accessHistory.daily) accessHistory.daily = {};
+          if (!accessHistory.weekly) accessHistory.weekly = {};
+          if (!accessHistory.monthly) accessHistory.monthly = {};
+          
+          // Daily stats
+          if (!accessHistory.daily[today]) {
+            accessHistory.daily[today] = { opens: 0, completions: 0, totalScore: 0 };
+          }
+          
+          // Weekly stats
+          const weekKey = `${year}-W${week}`;
+          if (!accessHistory.weekly[weekKey]) {
+            accessHistory.weekly[weekKey] = { opens: 0, completions: 0, totalScore: 0 };
+          }
+          
+          // Monthly stats
+          const monthKey = `${year}-${month}`;
+          if (!accessHistory.monthly[monthKey]) {
+            accessHistory.monthly[monthKey] = { opens: 0, completions: 0, totalScore: 0 };
+          }
+
           const updatedData = {
             name: name || quizData.name || `Quiz ${id}`,
             firstAccessed: quizData.firstAccessed || now,
@@ -376,17 +881,27 @@
             totalScore: quizData.totalScore || 0,
             averageScore: quizData.averageScore || 0,
             totalTimeSpent: quizData.totalTimeSpent || 0,
-            totalQuestions: totalQuestions || quizData.totalQuestions || 0
+            totalQuestions: totalQuestions || quizData.totalQuestions || 0,
+            accessHistory: accessHistory
           };
 
           if (eventType === 'quiz_open') {
             updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
+            accessHistory.daily[today].opens += 1;
+            accessHistory.weekly[weekKey].opens += 1;
+            accessHistory.monthly[monthKey].opens += 1;
           } else if (eventType === 'quiz_complete') {
             updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
+            accessHistory.daily[today].completions += 1;
+            accessHistory.weekly[weekKey].completions += 1;
+            accessHistory.monthly[monthKey].completions += 1;
             
             if (score) {
               updatedData.totalScore = (quizData.totalScore || 0) + parseInt(score);
               updatedData.averageScore = updatedData.totalScore / updatedData.timesCompleted;
+              accessHistory.daily[today].totalScore += parseInt(score);
+              accessHistory.weekly[weekKey].totalScore += parseInt(score);
+              accessHistory.monthly[monthKey].totalScore += parseInt(score);
             }
             
             if (timeSpent) {
@@ -398,6 +913,12 @@
         }).then(() => {
           console.log('✅ Quiz data updated in Firebase');
           showAlert('Quiz data updated successfully!', 'success');
+          
+          // Update all displays
+          displayAllStats();
+          updateDashboardStats();
+          updateTimeframeStats();
+          updateTopQuizzes();
         }).catch((error) => {
           console.error('❌ Firebase write error:', error);
           showAlert('Error updating quiz data', 'error');
@@ -408,6 +929,16 @@
       }
     }
 
+    // Get week number of the year
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+      return weekNo;
+    }
+
+    // Display all quiz statistics
     function displayAllStats() {
       const statsGrid = document.getElementById('stats-grid');
       const ref = firebase.database().ref('quizzes');
@@ -421,12 +952,14 @@
 
         currentQuizData = quizzes;
         renderQuizzes(quizzes);
+        updateActivityChart(quizzes);
       }).catch(error => {
         console.error('❌ Error loading stats from Firebase:', error);
         statsGrid.innerHTML = '<div class="error">Error loading statistics</div>';
       });
     }
 
+    // Render quizzes in the grid
     function renderQuizzes(quizzes) {
       const statsGrid = document.getElementById('stats-grid');
       
@@ -434,6 +967,29 @@
         statsGrid.innerHTML = '<div class="loading">No quiz data available yet</div>';
         return;
       }
+
+      // Sort quizzes based on current sort setting
+      quizzes.sort((a, b) => {
+        let aVal = a[currentSort];
+        let bVal = b[currentSort];
+        
+        if (currentSort === 'name') {
+          aVal = aVal || '';
+          bVal = bVal || '';
+        } else if (currentSort === 'lastAccessed') {
+          aVal = new Date(aVal || 0);
+          bVal = new Date(bVal || 0);
+        } else {
+          aVal = aVal || 0;
+          bVal = bVal || 0;
+        }
+        
+        if (sortDirection === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
 
       statsGrid.innerHTML = quizzes.map(quiz => {
         const completionRate = quiz.timesOpened > 0 ? (quiz.timesCompleted / quiz.timesOpened * 100) : 0;
@@ -463,6 +1019,7 @@
       }).join('');
     }
 
+    // Update dashboard statistics
     function updateDashboardStats() {
       const ref = firebase.database().ref('quizzes');
       ref.once('value').then(snapshot => {
@@ -475,13 +1032,300 @@
         const avgScore = quizzes.length > 0 ? 
           quizzes.reduce((sum, quiz) => sum + (quiz.averageScore || 0), 0) / quizzes.length : 0;
 
+        // Calculate changes
+        const quizzesChange = totalQuizzes - previousStats.totalQuizzes;
+        const opensChange = totalOpens - previousStats.totalOpens;
+        const completionsChange = totalCompletions - previousStats.totalCompletions;
+        const scoreChange = avgScore - previousStats.avgScore;
+
+        // Update previous stats
+        previousStats.totalQuizzes = totalQuizzes;
+        previousStats.totalOpens = totalOpens;
+        previousStats.totalCompletions = totalCompletions;
+        previousStats.avgScore = avgScore;
+
+        // Update DOM
         document.getElementById('total-quizzes').textContent = totalQuizzes;
         document.getElementById('total-opens').textContent = totalOpens;
         document.getElementById('total-completions').textContent = totalCompletions;
         document.getElementById('avg-score').textContent = Math.round(avgScore) + '%';
+
+        // Update change indicators
+        updateChangeIndicator('quizzes-change', quizzesChange);
+        updateChangeIndicator('opens-change', opensChange);
+        updateChangeIndicator('completions-change', completionsChange);
+        updateChangeIndicator('score-change', scoreChange, true);
       });
     }
 
+    // Update timeframe statistics (daily, weekly, monthly)
+    function updateTimeframeStats() {
+      const ref = firebase.database().ref('quizzes');
+      ref.once('value').then(snapshot => {
+        const data = snapshot.val() || {};
+        const quizzes = Object.values(data);
+        
+        const today = new Date().toISOString().split('T')[0];
+        const week = getWeekNumber(new Date());
+        const month = new Date().getMonth() + 1;
+        const year = new Date().getFullYear();
+        
+        let timeframeOpens = 0;
+        let timeframeCompletions = 0;
+        let timeframeTotalScore = 0;
+        
+        quizzes.forEach(quiz => {
+          if (!quiz.accessHistory) return;
+          
+          // Daily stats
+          if (currentTimeframe === 'daily' && quiz.accessHistory.daily && quiz.accessHistory.daily[today]) {
+            timeframeOpens += quiz.accessHistory.daily[today].opens || 0;
+            timeframeCompletions += quiz.accessHistory.daily[today].completions || 0;
+            timeframeTotalScore += quiz.accessHistory.daily[today].totalScore || 0;
+          }
+          // Weekly stats
+          else if (currentTimeframe === 'weekly' && quiz.accessHistory.weekly) {
+            const weekKey = `${year}-W${week}`;
+            if (quiz.accessHistory.weekly[weekKey]) {
+              timeframeOpens += quiz.accessHistory.weekly[weekKey].opens || 0;
+              timeframeCompletions += quiz.accessHistory.weekly[weekKey].completions || 0;
+              timeframeTotalScore += quiz.accessHistory.weekly[weekKey].totalScore || 0;
+            }
+          }
+          // Monthly stats
+          else if (currentTimeframe === 'monthly' && quiz.accessHistory.monthly) {
+            const monthKey = `${year}-${month}`;
+            if (quiz.accessHistory.monthly[monthKey]) {
+              timeframeOpens += quiz.accessHistory.monthly[monthKey].opens || 0;
+              timeframeCompletions += quiz.accessHistory.monthly[monthKey].completions || 0;
+              timeframeTotalScore += quiz.accessHistory.monthly[monthKey].totalScore || 0;
+            }
+          }
+        });
+        
+        const timeframeAvgScore = timeframeCompletions > 0 ? 
+          Math.round(timeframeTotalScore / timeframeCompletions) : 0;
+        
+        // Calculate changes
+        const opensChange = timeframeOpens - previousStats.timeframeOpens;
+        const completionsChange = timeframeCompletions - previousStats.timeframeCompletions;
+        const avgScoreChange = timeframeAvgScore - previousStats.timeframeAvgScore;
+        
+        // Update previous stats
+        previousStats.timeframeOpens = timeframeOpens;
+        previousStats.timeframeCompletions = timeframeCompletions;
+        previousStats.timeframeAvgScore = timeframeAvgScore;
+        
+        // Update DOM
+        document.getElementById('timeframe-opens').textContent = timeframeOpens;
+        document.getElementById('timeframe-completions').textContent = timeframeCompletions;
+        document.getElementById('timeframe-avg-score').textContent = timeframeAvgScore + '%';
+        
+        // Update change indicators
+        updateChangeIndicator('timeframe-opens-change', opensChange);
+        updateChangeIndicator('timeframe-completions-change', completionsChange);
+        updateChangeIndicator('timeframe-avg-score-change', avgScoreChange, true);
+      });
+    }
+
+    // Update change indicator element
+    function updateChangeIndicator(elementId, change, isPercentage = false) {
+      const element = document.getElementById(elementId);
+      if (!element) return;
+      
+      if (change > 0) {
+        element.innerHTML = `↑ ${isPercentage ? change.toFixed(1) + '%' : change} from last update`;
+        element.className = isPercentage ? 'timeframe-stat-change positive' : 'card-change positive';
+      } else if (change < 0) {
+        element.innerHTML = `↓ ${isPercentage ? Math.abs(change).toFixed(1) + '%' : Math.abs(change)} from last update`;
+        element.className = isPercentage ? 'timeframe-stat-change negative' : 'card-change negative';
+      } else {
+        element.innerHTML = 'No change from last update';
+        element.className = isPercentage ? 'timeframe-stat-change' : 'card-change';
+      }
+    }
+
+    // Update top quizzes list
+    function updateTopQuizzes() {
+      const ref = firebase.database().ref('quizzes');
+      ref.once('value').then(snapshot => {
+        const data = snapshot.val() || {};
+        const quizzes = Object.values(data);
+        
+        // Sort by completions
+        const sortedByCompletions = [...quizzes].sort((a, b) => {
+          return (b.timesCompleted || 0) - (a.timesCompleted || 0);
+        }).slice(0, 5);
+        
+        // Sort by score (only quizzes with completions)
+        const withScores = quizzes.filter(q => q.averageScore && q.timesCompleted > 0);
+        const sortedByScore = [...withScores].sort((a, b) => {
+          return (b.averageScore || 0) - (a.averageScore || 0);
+        }).slice(0, 5);
+        
+        // Sort by opens
+        const sortedByOpens = [...quizzes].sort((a, b) => {
+          return (b.timesOpened || 0) - (a.timesOpened || 0);
+        }).slice(0, 5);
+        
+        // Render top quizzes
+        const topQuizzesList = document.getElementById('top-quizzes-list');
+        topQuizzesList.innerHTML = `
+          <div style="margin-bottom: 16px;">
+            <div style="font-weight: 600; margin-bottom: 8px;">Most Completed</div>
+            ${sortedByCompletions.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'completions')).join('')}
+          </div>
+          <div style="margin-bottom: 16px;">
+            <div style="font-weight: 600; margin-bottom: 8px;">Highest Scores</div>
+            ${sortedByScore.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'score')).join('')}
+          </div>
+          <div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Most Opened</div>
+            ${sortedByOpens.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'opens')).join('')}
+          </div>
+        `;
+      });
+    }
+
+    // Render a top quiz item
+    function renderTopQuizItem(quiz, rank, type) {
+      let value, label;
+      if (type === 'completions') {
+        value = quiz.timesCompleted || 0;
+        label = 'Completions';
+      } else if (type === 'score') {
+        value = Math.round(quiz.averageScore || 0) + '%';
+        label = 'Score';
+      } else {
+        value = quiz.timesOpened || 0;
+        label = 'Opens';
+      }
+      
+      return `
+        <div class="top-quiz-item">
+          <div class="top-quiz-rank">${rank}</div>
+          <div class="top-quiz-name">${quiz.name || `Quiz ${quiz.id}`}</div>
+          <div class="top-quiz-stats">
+            <div class="top-quiz-stat">
+              <div class="top-quiz-stat-value">${value}</div>
+              <div class="top-quiz-stat-label">${label}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Update activity chart
+    function updateActivityChart(quizzes) {
+      const ctx = document.getElementById('activityChart').getContext('2d');
+      
+      // Prepare data for the chart
+      const last7Days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        last7Days.push(date.toISOString().split('T')[0]);
+      }
+      
+      const opensData = [];
+      const completionsData = [];
+      
+      last7Days.forEach(day => {
+        let dayOpens = 0;
+        let dayCompletions = 0;
+        
+        quizzes.forEach(quiz => {
+          if (quiz.accessHistory && quiz.accessHistory.daily && quiz.accessHistory.daily[day]) {
+            dayOpens += quiz.accessHistory.daily[day].opens || 0;
+            dayCompletions += quiz.accessHistory.daily[day].completions || 0;
+          }
+        });
+        
+        opensData.push(dayOpens);
+        completionsData.push(dayCompletions);
+      });
+      
+      // Format dates for display
+      const displayDates = last7Days.map(date => {
+        const d = new Date(date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      
+      // Destroy previous chart if it exists
+      if (activityChart) {
+        activityChart.destroy();
+      }
+      
+      // Create new chart
+      activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: displayDates,
+          datasets: [
+            {
+              label: 'Quiz Opens',
+              data: opensData,
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Quiz Completions',
+              data: completionsData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          }
+        }
+      });
+    }
+
+    // Change timeframe tab
+    function changeTimeframeTab(timeframe) {
+      currentTimeframe = timeframe;
+      
+      // Update active tab
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+      
+      // Update stats
+      updateTimeframeStats();
+    }
+
+    // Delete a quiz
     function deleteQuiz(id, name) {
       currentDeleteId = id;
       currentDeleteType = 'single';
@@ -490,6 +1334,7 @@
       document.getElementById('deleteModal').style.display = 'block';
     }
 
+    // Reset quiz statistics
     function resetQuizStats(id) {
       if (confirm('Are you sure you want to reset all statistics for this quiz? This will keep the quiz but reset all counters to zero.')) {
         const ref = firebase.database().ref('quizzes/' + id);
@@ -505,13 +1350,16 @@
               totalScore: 0,
               averageScore: 0,
               totalTimeSpent: 0,
-              totalQuestions: quiz.totalQuestions || 0
+              totalQuestions: quiz.totalQuestions || 0,
+              accessHistory: {} // Reset access history
             };
             
             ref.set(resetData).then(() => {
               showAlert('Quiz statistics reset successfully!', 'success');
               displayAllStats();
               updateDashboardStats();
+              updateTimeframeStats();
+              updateTopQuizzes();
             }).catch(error => {
               showAlert('Error resetting quiz statistics', 'error');
               console.error(error);
@@ -521,6 +1369,7 @@
       }
     }
 
+    // Show clear all modal
     function showClearAllModal() {
       currentDeleteType = 'all';
       document.getElementById('deleteMessage').textContent = 
@@ -528,6 +1377,7 @@
       document.getElementById('deleteModal').style.display = 'block';
     }
 
+    // Confirm deletion
     function confirmDelete() {
       if (currentDeleteType === 'single' && currentDeleteId) {
         const ref = firebase.database().ref('quizzes/' + currentDeleteId);
@@ -535,6 +1385,8 @@
           showAlert('Quiz deleted successfully!', 'success');
           displayAllStats();
           updateDashboardStats();
+          updateTimeframeStats();
+          updateTopQuizzes();
           closeModal();
         }).catch(error => {
           showAlert('Error deleting quiz', 'error');
@@ -546,6 +1398,8 @@
           showAlert('All quiz data cleared successfully!', 'success');
           displayAllStats();
           updateDashboardStats();
+          updateTimeframeStats();
+          updateTopQuizzes();
           closeModal();
         }).catch(error => {
           showAlert('Error clearing all data', 'error');
@@ -554,11 +1408,13 @@
       }
     }
 
+    // Close modal
     function closeModal() {
       document.getElementById('deleteModal').style.display = 'none';
       currentDeleteId = null;
     }
 
+    // Filter quizzes
     function filterQuizzes() {
       const searchTerm = document.getElementById('search-input').value.toLowerCase();
       const filterType = document.getElementById('filter-select').value;
@@ -585,6 +1441,7 @@
       renderQuizzes(filteredQuizzes);
     }
 
+    // Sort quizzes
     function sortQuizzes(sortBy) {
       if (currentSort === sortBy) {
         sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -593,31 +1450,10 @@
         sortDirection = 'desc';
       }
       
-      currentQuizData.sort((a, b) => {
-        let aVal = a[sortBy];
-        let bVal = b[sortBy];
-        
-        if (sortBy === 'name') {
-          aVal = aVal || '';
-          bVal = bVal || '';
-        } else if (sortBy === 'lastAccessed') {
-          aVal = new Date(aVal || 0);
-          bVal = new Date(bVal || 0);
-        } else {
-          aVal = aVal || 0;
-          bVal = bVal || 0;
-        }
-        
-        if (sortDirection === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        } else {
-          return aVal < bVal ? 1 : -1;
-        }
-      });
-      
-      renderQuizzes(currentQuizData);
+      displayAllStats(); // This will re-render with the new sort
     }
 
+    // Export to CSV
     function exportToCSV() {
       const headers = ['Name', 'Times Opened', 'Times Completed', 'Average Score', 'Total Time Spent', 'Total Questions', 'First Accessed', 'Last Accessed'];
       const csvContent = [
@@ -644,6 +1480,7 @@
       showAlert('CSV exported successfully!', 'success');
     }
 
+    // Export to JSON
     function exportToJSON() {
       const jsonContent = JSON.stringify(currentQuizData, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -656,18 +1493,8 @@
       showAlert('JSON exported successfully!', 'success');
     }
 
-    // Initialize
-    try {
-      processTrackingData();
-      setInterval(() => {
-        displayAllStats();
-        updateDashboardStats();
-      }, 30000); // auto-refresh every 30 seconds
-      console.log('Quiz management dashboard initialized');
-    } catch (error) {
-      console.error('Initialization error:', error);
-      showAlert('Error initializing dashboard', 'error');
-    }
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initDashboard);
 
     // Close modal when clicking outside
     window.onclick = function(event) {
