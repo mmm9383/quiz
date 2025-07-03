@@ -87,15 +87,14 @@
         const quizName = params.get('quiz') || params.get('quiz_title');
         const quizId = params.get('id') || params.get('quiz_id');
         const timestamp = params.get('timestamp') || Date.now();
-        const quizUrl = params.get('quizUrl') || params.get('quiz_url');
         const eventType = params.get('eventType') || params.get('event_type');
         const score = params.get('score');
         const totalQuestions = params.get('total_questions');
         const timeSpent = params.get('time_spent');
 
         if (quizId) {
-          updateCurrentQuizDisplay(quizName, quizId, timestamp, quizUrl, eventType, score, totalQuestions);
-          recordQuizAccess(quizId, quizName, quizUrl, eventType, score, totalQuestions, timeSpent);
+          updateCurrentQuizDisplay(quizName, quizId, timestamp, eventType, score, totalQuestions);
+          recordQuizAccess(quizId, quizName, eventType, score, totalQuestions, timeSpent);
           displayAllStats();
         }
       } catch (error) {
@@ -104,7 +103,7 @@
       }
     }
 
-    function updateCurrentQuizDisplay(name, id, timestamp, url, eventType, score, totalQuestions) {
+    function updateCurrentQuizDisplay(name, id, timestamp, eventType, score, totalQuestions) {
       const currentQuizDiv = document.getElementById('current-quiz');
       if (!id) {
         currentQuizDiv.innerHTML = '<div>No active quiz session detected</div>';
@@ -124,38 +123,49 @@
         <div><strong>Event:</strong> ${eventTypeDisplay}</div>
         <div><strong>Time:</strong> ${new Date(parseInt(timestamp)).toLocaleString()}</div>
         ${score ? `<div><strong>Score:</strong> ${score}%${totalQuestions ? ` (${Math.round(score * totalQuestions / 100)}/${totalQuestions})` : ''}</div>` : ''}
-        ${url ? `<div><strong>URL:</strong> <a href="${decodeURIComponent(url)}" class="quiz-link" target="_blank">${decodeURIComponent(url)}</a></div>` : ''}
       `;
     }
 
-    function recordQuizAccess(id, name, url, eventType, score, totalQuestions, timeSpent) {
+    // 🔧 FIXED: Clean Firebase data recording - no unwanted fields
+    function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent) {
       try {
         const now = new Date().toISOString();
         const ref = firebase.database().ref('quizzes/' + id);
 
         ref.once('value').then(snapshot => {
           const quizData = snapshot.val() || {};
-          quizData.name = name || quizData.name || `Quiz ${id}`;
-          quizData.url = url || quizData.url;
-          quizData.totalEvents = (quizData.totalEvents || 0) + 1;
-          quizData.lastAccessed = now;
-          quizData.firstAccessed = quizData.firstAccessed || now;
-          quizData.lastEventType = eventType || quizData.lastEventType;
+          
+          // ✅ CLEAN DATA STRUCTURE - Only store what we need
+          const updatedData = {
+            name: name || quizData.name || `Quiz ${id}`,
+            firstAccessed: quizData.firstAccessed || now,
+            lastAccessed: now,
+            timesOpened: quizData.timesOpened || 0,
+            timesCompleted: quizData.timesCompleted || 0,
+            totalScore: quizData.totalScore || 0,
+            averageScore: quizData.averageScore || 0,
+            totalTimeSpent: quizData.totalTimeSpent || 0,
+            totalQuestions: totalQuestions || quizData.totalQuestions || 0
+            // ❌ REMOVED: url, totalEvents, lastEventType
+          };
 
+          // Handle different event types
           if (eventType === 'quiz_open') {
-            quizData.timesOpened = (quizData.timesOpened || 0) + 1;
+            updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
           } else if (eventType === 'quiz_complete') {
-            quizData.timesCompleted = (quizData.timesCompleted || 0) + 1;
+            updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
+            
             if (score) {
-              quizData.totalScore = (quizData.totalScore || 0) + parseInt(score);
-              quizData.averageScore = quizData.totalScore / quizData.timesCompleted;
+              updatedData.totalScore = (quizData.totalScore || 0) + parseInt(score);
+              updatedData.averageScore = updatedData.totalScore / updatedData.timesCompleted;
+            }
+            
+            if (timeSpent) {
+              updatedData.totalTimeSpent = (quizData.totalTimeSpent || 0) + parseInt(timeSpent);
             }
           }
 
-          if (totalQuestions) quizData.totalQuestions = totalQuestions;
-          if (timeSpent) quizData.totalTimeSpent = (quizData.totalTimeSpent || 0) + parseInt(timeSpent);
-
-          return ref.set(quizData);
+          return ref.set(updatedData);
         }).then(() => {
           console.log('✅ Quiz data updated in Firebase');
         }).catch((error) => {
@@ -185,13 +195,13 @@
           ? quizzes.map(quiz => `
               <div class="stat-card">
                 <div class="stat-label">📋 ${quiz.name || `Quiz ${quiz.id}`}</div>
-                <div class="stat-value">${quiz.totalEvents || 0}</div>
+                <div class="stat-value">Opens: ${quiz.timesOpened || 0}</div>
                 <div class="quiz-meta">
-                  <div><strong>Opened:</strong> ${quiz.timesOpened || 0} times</div>
                   <div><strong>Completed:</strong> ${quiz.timesCompleted || 0} times</div>
                   ${quiz.averageScore ? `<div><strong>Avg Score:</strong> ${Math.round(quiz.averageScore)}%</div>` : ''}
-                  <div><strong>Last:</strong> ${quiz.lastAccessed ? new Date(quiz.lastAccessed).toLocaleDateString() : 'Never'}</div>
-                  ${quiz.url ? `<div><a href="${quiz.url}" class="quiz-link" target="_blank">Open Quiz</a></div>` : ''}
+                  ${quiz.totalTimeSpent ? `<div><strong>Total Time:</strong> ${quiz.totalTimeSpent}s</div>` : ''}
+                  <div><strong>Last Access:</strong> ${quiz.lastAccessed ? new Date(quiz.lastAccessed).toLocaleDateString() : 'Never'}</div>
+                  <div><strong>Questions:</strong> ${quiz.totalQuestions || 'N/A'}</div>
                 </div>
               </div>
             `).join('')
