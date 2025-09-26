@@ -625,11 +625,28 @@
           <div class="timeframe-stat-label">Completions</div>
           <div class="timeframe-stat-change" id="timeframe-completions-change"></div>
         </div>
+        <div class="timeframe-stats" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-opens">0</div>
+          <div class="timeframe-stat-label">Opens</div>
+          <div class="timeframe-stat-change" id="timeframe-opens-change"></div>
+        </div>
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-completions">0</div>
+          <div class="timeframe-stat-label">Completions</div>
+          <div class="timeframe-stat-change" id="timeframe-completions-change"></div>
+        </div>
         <div class="timeframe-stat">
           <div class="timeframe-stat-value" id="timeframe-avg-score">0%</div>
           <div class="timeframe-stat-label">Avg Score</div>
           <div class="timeframe-stat-change" id="timeframe-avg-score-change"></div>
         </div>
+        <div class="timeframe-stat">
+          <div class="timeframe-stat-value" id="timeframe-downloads">0</div>
+          <div class="timeframe-stat-label">Downloads</div>
+          <div class="timeframe-stat-change" id="timeframe-downloads-change"></div>
+        </div>
+      </div>
       </div>
     </div>
 
@@ -654,6 +671,11 @@
         <div class="card-title">🎯 Average Score</div>
         <div class="card-value" id="avg-score">0%</div>
         <div class="card-change" id="score-change"></div>
+      </div>
+      <div class="dashboard-card card-sm">
+        <div class="card-title">📄 PDF Downloads</div>
+        <div class="card-value" id="total-downloads">0</div>
+        <div class="card-change" id="downloads-change"></div>
       </div>
     </div>
 
@@ -895,6 +917,16 @@
             accessHistory.daily[today].completions += 1;
             accessHistory.weekly[weekKey].completions += 1;
             accessHistory.monthly[monthKey].completions += 1;
+          } else if (eventType === 'pdf_download') {
+            updatedData.pdfDownloads = (quizData.pdfDownloads || 0) + 1;
+            // Add PDF downloads to access history
+            if (!accessHistory.daily[today].pdfDownloads) accessHistory.daily[today].pdfDownloads = 0;
+            if (!accessHistory.weekly[weekKey].pdfDownloads) accessHistory.weekly[weekKey].pdfDownloads = 0;
+            if (!accessHistory.monthly[monthKey].pdfDownloads) accessHistory.monthly[monthKey].pdfDownloads = 0;
+            
+            accessHistory.daily[today].pdfDownloads += 1;
+            accessHistory.weekly[weekKey].pdfDownloads += 1;
+            accessHistory.monthly[monthKey].pdfDownloads += 1;  
             
             if (score) {
               updatedData.totalScore = (quizData.totalScore || 0) + parseInt(score);
@@ -1008,6 +1040,7 @@
               ${quiz.averageScore ? `<div><strong>🎯 Avg Score:</strong> ${Math.round(quiz.averageScore)}%</div>` : ''}
               ${quiz.totalTimeSpent ? `<div><strong>⏱️ Avg Time:</strong> ${avgTime}s</div>` : ''}
               <div><strong>📅 Last Access:</strong> ${quiz.lastAccessed ? new Date(quiz.lastAccessed).toLocaleDateString() : 'Never'}</div>
+              <div><strong>📄 PDF Downloads:</strong> ${quiz.pdfDownloads || 0}</div>
               <div><strong>❓ Questions:</strong> ${quiz.totalQuestions || 'N/A'}</div>
             </div>
             <div class="card-actions">
@@ -1031,6 +1064,7 @@
         const totalCompletions = quizzes.reduce((sum, quiz) => sum + (quiz.timesCompleted || 0), 0);
         const avgScore = quizzes.length > 0 ? 
           quizzes.reduce((sum, quiz) => sum + (quiz.averageScore || 0), 0) / quizzes.length : 0;
+        const totalDownloads = quizzes.reduce((sum, quiz) => sum + (quiz.pdfDownloads || 0), 0);
 
         // Calculate changes
         const quizzesChange = totalQuizzes - previousStats.totalQuizzes;
@@ -1049,6 +1083,7 @@
         document.getElementById('total-opens').textContent = totalOpens;
         document.getElementById('total-completions').textContent = totalCompletions;
         document.getElementById('avg-score').textContent = Math.round(avgScore) + '%';
+        document.getElementById('total-downloads').textContent = totalDownloads;
 
         // Update change indicators
         updateChangeIndicator('quizzes-change', quizzesChange);
