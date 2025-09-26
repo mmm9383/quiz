@@ -856,110 +856,114 @@
       `;
     }
 
-    // Record quiz access in Firebase
-    function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent) {
-      try {
-        const now = new Date().toISOString();
-        const ref = firebase.database().ref('quizzes/' + id);
+    // Record quiz access in Firebase - FIXED VERSION
+function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent) {
+  try {
+    const now = new Date().toISOString();
+    const ref = firebase.database().ref('quizzes/' + id);
 
-        ref.once('value').then(snapshot => {
-          const quizData = snapshot.val() || {};
-          
-          // Update access history for timeframe stats
-          const accessHistory = quizData.accessHistory || {};
-          const today = new Date().toISOString().split('T')[0];
-          const week = getWeekNumber(new Date());
-          const month = new Date().getMonth() + 1;
-          const year = new Date().getFullYear();
-          
-          // Initialize if not exists
-          if (!accessHistory.daily) accessHistory.daily = {};
-          if (!accessHistory.weekly) accessHistory.weekly = {};
-          if (!accessHistory.monthly) accessHistory.monthly = {};
-          
-          // Daily stats
-          if (!accessHistory.daily[today]) {
-            accessHistory.daily[today] = { opens: 0, completions: 0, totalScore: 0 };
-          }
-          
-          // Weekly stats
-          const weekKey = `${year}-W${week}`;
-          if (!accessHistory.weekly[weekKey]) {
-            accessHistory.weekly[weekKey] = { opens: 0, completions: 0, totalScore: 0 };
-          }
-          
-          // Monthly stats
-          const monthKey = `${year}-${month}`;
-          if (!accessHistory.monthly[monthKey]) {
-            accessHistory.monthly[monthKey] = { opens: 0, completions: 0, totalScore: 0 };
-          }
-
-          const updatedData = {
-            name: name || quizData.name || `Quiz ${id}`,
-            firstAccessed: quizData.firstAccessed || now,
-            lastAccessed: now,
-            timesOpened: quizData.timesOpened || 0,
-            timesCompleted: quizData.timesCompleted || 0,
-            totalScore: quizData.totalScore || 0,
-            averageScore: quizData.averageScore || 0,
-            totalTimeSpent: quizData.totalTimeSpent || 0,
-            totalQuestions: totalQuestions || quizData.totalQuestions || 0,
-            accessHistory: accessHistory
-          };
-
-          if (eventType === 'quiz_open') {
-            updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
-            accessHistory.daily[today].opens += 1;
-            accessHistory.weekly[weekKey].opens += 1;
-            accessHistory.monthly[monthKey].opens += 1;
-          } else if (eventType === 'quiz_complete') {
-            updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
-            accessHistory.daily[today].completions += 1;
-            accessHistory.weekly[weekKey].completions += 1;
-            accessHistory.monthly[monthKey].completions += 1;
-          } else if (eventType === 'pdf_download') {
-            updatedData.pdfDownloads = (quizData.pdfDownloads || 0) + 1;
-            // Add PDF downloads to access history
-            if (!accessHistory.daily[today].pdfDownloads) accessHistory.daily[today].pdfDownloads = 0;
-            if (!accessHistory.weekly[weekKey].pdfDownloads) accessHistory.weekly[weekKey].pdfDownloads = 0;
-            if (!accessHistory.monthly[monthKey].pdfDownloads) accessHistory.monthly[monthKey].pdfDownloads = 0;
-            
-            accessHistory.daily[today].pdfDownloads += 1;
-            accessHistory.weekly[weekKey].pdfDownloads += 1;
-            accessHistory.monthly[monthKey].pdfDownloads += 1;  
-            
-            if (score) {
-              updatedData.totalScore = (quizData.totalScore || 0) + parseInt(score);
-              updatedData.averageScore = updatedData.totalScore / updatedData.timesCompleted;
-              accessHistory.daily[today].totalScore += parseInt(score);
-              accessHistory.weekly[weekKey].totalScore += parseInt(score);
-              accessHistory.monthly[monthKey].totalScore += parseInt(score);
-            }
-            
-            if (timeSpent) {
-              updatedData.totalTimeSpent = (quizData.totalTimeSpent || 0) + parseInt(timeSpent);
-            }
-          }
-
-          return ref.set(updatedData);
-        }).then(() => {
-          console.log('✅ Quiz data updated in Firebase');
-          showAlert('Quiz data updated successfully!', 'success');
-          
-          // Update all displays
-          displayAllStats();
-          updateDashboardStats();
-          updateTimeframeStats();
-          updateTopQuizzes();
-        }).catch((error) => {
-          console.error('❌ Firebase write error:', error);
-          showAlert('Error updating quiz data', 'error');
-        });
-      } catch (error) {
-        console.error('❌ Error in recordQuizAccess:', error);
-        showAlert('Error recording quiz access', 'error');
+    ref.once('value').then(snapshot => {
+      const quizData = snapshot.val() || {};
+      
+      // Update access history for timeframe stats
+      const accessHistory = quizData.accessHistory || {};
+      const today = new Date().toISOString().split('T')[0];
+      const week = getWeekNumber(new Date());
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      
+      // Initialize if not exists
+      if (!accessHistory.daily) accessHistory.daily = {};
+      if (!accessHistory.weekly) accessHistory.weekly = {};
+      if (!accessHistory.monthly) accessHistory.monthly = {};
+      
+      // Daily stats
+      if (!accessHistory.daily[today]) {
+        accessHistory.daily[today] = { opens: 0, completions: 0, totalScore: 0, pdfDownloads: 0 };
       }
-    }
+      
+      // Weekly stats
+      const weekKey = `${year}-W${week}`;
+      if (!accessHistory.weekly[weekKey]) {
+        accessHistory.weekly[weekKey] = { opens: 0, completions: 0, totalScore: 0, pdfDownloads: 0 };
+      }
+      
+      // Monthly stats
+      const monthKey = `${year}-${month}`;
+      if (!accessHistory.monthly[monthKey]) {
+        accessHistory.monthly[monthKey] = { opens: 0, completions: 0, totalScore: 0, pdfDownloads: 0 };
+      }
+
+      const updatedData = {
+        name: name || quizData.name || `Quiz ${id}`,
+        firstAccessed: quizData.firstAccessed || now,
+        lastAccessed: now,
+        timesOpened: quizData.timesOpened || 0,
+        timesCompleted: quizData.timesCompleted || 0,
+        totalScore: quizData.totalScore || 0,
+        averageScore: quizData.averageScore || 0,
+        totalTimeSpent: quizData.totalTimeSpent || 0,
+        totalQuestions: totalQuestions || quizData.totalQuestions || 0,
+        pdfDownloads: quizData.pdfDownloads || 0, // Initialize PDF downloads
+        accessHistory: accessHistory
+      };
+
+      // Handle different event types
+      if (eventType === 'quiz_open') {
+        updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
+        accessHistory.daily[today].opens += 1;
+        accessHistory.weekly[weekKey].opens += 1;
+        accessHistory.monthly[monthKey].opens += 1;
+        
+      } else if (eventType === 'quiz_complete') {
+        updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
+        accessHistory.daily[today].completions += 1;
+        accessHistory.weekly[weekKey].completions += 1;
+        accessHistory.monthly[monthKey].completions += 1;
+        
+        // Handle score data (only for quiz completion)
+        if (score) {
+          updatedData.totalScore = (quizData.totalScore || 0) + parseInt(score);
+          updatedData.averageScore = updatedData.totalScore / updatedData.timesCompleted;
+          accessHistory.daily[today].totalScore += parseInt(score);
+          accessHistory.weekly[weekKey].totalScore += parseInt(score);
+          accessHistory.monthly[monthKey].totalScore += parseInt(score);
+        }
+        
+        // Handle time spent data (only for quiz completion)
+        if (timeSpent) {
+          updatedData.totalTimeSpent = (quizData.totalTimeSpent || 0) + parseInt(timeSpent);
+        }
+        
+      } else if (eventType === 'pdf_download') {
+        // Only handle PDF download increment - no score or time data
+        updatedData.pdfDownloads = (quizData.pdfDownloads || 0) + 1;
+        
+        // Add PDF downloads to access history
+        accessHistory.daily[today].pdfDownloads += 1;
+        accessHistory.weekly[weekKey].pdfDownloads += 1;
+        accessHistory.monthly[monthKey].pdfDownloads += 1;
+      }
+
+      return ref.set(updatedData);
+    }).then(() => {
+      console.log('✅ Quiz data updated in Firebase');
+      showAlert('Quiz data updated successfully!', 'success');
+      
+      // Update all displays
+      displayAllStats();
+      updateDashboardStats();
+      updateTimeframeStats();
+      updateTopQuizzes();
+    }).catch((error) => {
+      console.error('❌ Firebase write error:', error);
+      showAlert('Error updating quiz data', 'error');
+    });
+  } catch (error) {
+    console.error('❌ Error in recordQuizAccess:', error);
+    showAlert('Error recording quiz access', 'error');
+  }
+}
 
     // Get week number of the year
     function getWeekNumber(d) {
