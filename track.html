@@ -617,18 +617,18 @@
       <div class="timeframe-stats">
         <div class="timeframe-stat">
           <div class="timeframe-stat-value" id="timeframe-opens">0</div>
-          <div class="timeframe-stat-label">Unique Opens</div>
+          <div class="timeframe-stat-label">Opens</div>
           <div class="timeframe-stat-change" id="timeframe-opens-change"></div>
         </div>
         <div class="timeframe-stat">
           <div class="timeframe-stat-value" id="timeframe-completions">0</div>
-          <div class="timeframe-stat-label">First Completions</div>
+          <div class="timeframe-stat-label">Completions</div>
           <div class="timeframe-stat-change" id="timeframe-completions-change"></div>
         </div>
 
           <div class="timeframe-stat">
           <div class="timeframe-stat-value" id="timeframe-avg-score">0%</div>
-          <div class="timeframe-stat-label">First Score Avg</div>
+          <div class="timeframe-stat-label">Avg Score</div>
           <div class="timeframe-stat-change" id="timeframe-avg-score-change"></div>
         
       </div>
@@ -643,17 +643,17 @@
         <div class="card-change" id="quizzes-change"></div>
       </div>
       <div class="dashboard-card card-sm">
-        <div class="card-title">🚀 Unique Opens</div>
+        <div class="card-title">🚀 Total Opens</div>
         <div class="card-value" id="total-opens">0</div>
         <div class="card-change" id="opens-change"></div>
       </div>
       <div class="dashboard-card card-sm">
-        <div class="card-title">✅ First Completions</div>
+        <div class="card-title">✅ Total Completions</div>
         <div class="card-value" id="total-completions">0</div>
         <div class="card-change" id="completions-change"></div>
       </div>
       <div class="dashboard-card card-sm">
-        <div class="card-title">🎯 First Score Avg</div>
+        <div class="card-title">🎯 Average Score</div>
         <div class="card-value" id="avg-score">0%</div>
         <div class="card-change" id="score-change"></div>
       </div>
@@ -806,11 +806,11 @@
         const score = params.get('score');
         const totalQuestions = params.get('total_questions');
         const timeSpent = params.get('time_spent');
-        const deviceId = params.get('device_id');
+        const sessionId = params.get('session_id');
 
         if (quizId) {
           updateCurrentQuizDisplay(quizName, quizId, timestamp, eventType, score, totalQuestions);
-          recordQuizAccess(quizId, quizName, eventType, score, totalQuestions, timeSpent, deviceId);
+          recordQuizAccess(quizId, quizName, eventType, score, totalQuestions, timeSpent, sessionId);
         }
       } catch (error) {
         console.error('Error processing tracking data:', error);
@@ -848,19 +848,17 @@
       }
     }
 
-    function createDefaultDeviceSummary() {
+    function createDefaultSessionSummary() {
       return {
-        hasOpened: false,
         hasCompleted: false,
-        firstOpenedAt: null,
         firstCompletedAt: null,
         lastAccessed: null,
         firstScore: null
       };
     }
 
-// Record quiz access in Firebase - deduped by device
-function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent, deviceId) {
+// Record quiz access in Firebase - opens count every load, completions once per session
+function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent, sessionId) {
   try {
     const now = new Date().toISOString();
     const ref = firebase.database().ref('quizzes/' + id);
@@ -879,10 +877,10 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
       if (!accessHistory.daily) accessHistory.daily = {};
       if (!accessHistory.weekly) accessHistory.weekly = {};
       if (!accessHistory.monthly) accessHistory.monthly = {};
-      const deviceSummaries = quizData.deviceSummaries || {};
-      const deviceKey = typeof deviceId === 'string' && deviceId.trim() ? deviceId.trim() : null;
-      const deviceSummary = deviceKey
-        ? (deviceSummaries[deviceKey] || createDefaultDeviceSummary())
+      const sessionSummaries = quizData.sessionSummaries || {};
+      const sessionKey = typeof sessionId === 'string' && sessionId.trim() ? sessionId.trim() : null;
+      const sessionSummary = sessionKey
+        ? (sessionSummaries[sessionKey] || createDefaultSessionSummary())
         : null;
       
       // Daily stats
@@ -908,41 +906,24 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
         totalQuestions: totalQuestions || quizData.totalQuestions || 0,
         pdfDownloads: quizData.pdfDownloads || 0, // Initialize PDF downloads
         accessHistory: accessHistory,
-        deviceSummaries: deviceSummaries
+        sessionSummaries: sessionSummaries
       };
 
       // Handle different event types
       if (eventType === 'quiz_open') {
-        if (deviceSummary) {
-          if (!deviceSummary.hasOpened) {
-            updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
-            accessHistory.daily[today].opens += 1;
-            accessHistory.weekly[weekKey].opens += 1;
-            accessHistory.monthly[monthKey].opens += 1;
-            deviceSummary.hasOpened = true;
-            deviceSummary.firstOpenedAt = deviceSummary.firstOpenedAt || now;
-          }
-          deviceSummary.lastAccessed = now;
-          deviceSummaries[deviceKey] = deviceSummary;
-        } else {
-          updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
-          accessHistory.daily[today].opens += 1;
-          accessHistory.weekly[weekKey].opens += 1;
-          accessHistory.monthly[monthKey].opens += 1;
+        updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
+        accessHistory.daily[today].opens += 1;
+        accessHistory.weekly[weekKey].opens += 1;
+        accessHistory.monthly[monthKey].opens += 1;
+
+        if (sessionSummary) {
+          sessionSummary.lastAccessed = now;
+          sessionSummaries[sessionKey] = sessionSummary;
         }
         
       } else if (eventType === 'quiz_complete') {
-        if (deviceSummary) {
-          if (!deviceSummary.hasOpened) {
-            updatedData.timesOpened = (quizData.timesOpened || 0) + 1;
-            accessHistory.daily[today].opens += 1;
-            accessHistory.weekly[weekKey].opens += 1;
-            accessHistory.monthly[monthKey].opens += 1;
-            deviceSummary.hasOpened = true;
-            deviceSummary.firstOpenedAt = deviceSummary.firstOpenedAt || now;
-          }
-
-          if (!deviceSummary.hasCompleted) {
+        if (sessionSummary) {
+          if (!sessionSummary.hasCompleted) {
             updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
             accessHistory.daily[today].completions += 1;
             accessHistory.weekly[weekKey].completions += 1;
@@ -956,19 +937,19 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
               accessHistory.daily[today].totalScore += parseInt(score);
               accessHistory.weekly[weekKey].totalScore += parseInt(score);
               accessHistory.monthly[monthKey].totalScore += parseInt(score);
-              deviceSummary.firstScore = parseInt(score);
+              sessionSummary.firstScore = parseInt(score);
             }
             
             if (timeSpent) {
               updatedData.totalTimeSpent = (quizData.totalTimeSpent || 0) + parseInt(timeSpent);
             }
 
-            deviceSummary.hasCompleted = true;
-            deviceSummary.firstCompletedAt = deviceSummary.firstCompletedAt || now;
+            sessionSummary.hasCompleted = true;
+            sessionSummary.firstCompletedAt = sessionSummary.firstCompletedAt || now;
           }
 
-          deviceSummary.lastAccessed = now;
-          deviceSummaries[deviceKey] = deviceSummary;
+          sessionSummary.lastAccessed = now;
+          sessionSummaries[sessionKey] = sessionSummary;
         } else {
           updatedData.timesCompleted = (quizData.timesCompleted || 0) + 1;
           accessHistory.daily[today].completions += 1;
@@ -1001,9 +982,9 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
         accessHistory.weekly[weekKey].pdfDownloads += 1;
         accessHistory.monthly[monthKey].pdfDownloads += 1;
 
-        if (deviceSummary) {
-          deviceSummary.lastAccessed = now;
-          deviceSummaries[deviceKey] = deviceSummary;
+        if (sessionSummary) {
+          sessionSummary.lastAccessed = now;
+          sessionSummaries[sessionKey] = sessionSummary;
         }
       }
 
@@ -1096,15 +1077,15 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
         return `
           <div class="stat-card">
             <div class="stat-label">📋 ${quiz.name || `Quiz ${quiz.id}`}</div>
-            <div class="stat-value">${quiz.timesOpened || 0} unique opens</div>
+            <div class="stat-value">${quiz.timesOpened || 0} opens</div>
             <div class="quiz-meta">
-              <div><strong>✅ First completions:</strong> ${quiz.timesCompleted || 0}</div>
+              <div><strong>✅ Completed:</strong> ${quiz.timesCompleted || 0} times</div>
               <div><strong>📊 Completion Rate:</strong> ${completionRate.toFixed(1)}%</div>
               <div class="progress-bar">
                 <div class="progress-fill" style="width: ${completionRate}%"></div>
               </div>
-              ${quiz.averageScore ? `<div><strong>🎯 First score avg:</strong> ${Math.round(quiz.averageScore)}%</div>` : ''}
-              ${quiz.totalTimeSpent ? `<div><strong>⏱️ Avg first time:</strong> ${avgTime}s</div>` : ''}
+              ${quiz.averageScore ? `<div><strong>🎯 Avg Score:</strong> ${Math.round(quiz.averageScore)}%</div>` : ''}
+              ${quiz.totalTimeSpent ? `<div><strong>⏱️ Avg Time:</strong> ${avgTime}s</div>` : ''}
               <div><strong>📅 Last Access:</strong> ${quiz.lastAccessed ? new Date(quiz.lastAccessed).toLocaleDateString() : 'Never'}</div>
               <div><strong>📄 PDF Downloads:</strong> ${quiz.pdfDownloads || 0}</div>
               <div><strong>❓ Questions:</strong> ${quiz.totalQuestions || 'N/A'}</div>
@@ -1273,15 +1254,15 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
         const topQuizzesList = document.getElementById('top-quizzes-list');
         topQuizzesList.innerHTML = `
           <div style="margin-bottom: 16px;">
-            <div style="font-weight: 600; margin-bottom: 8px;">Most First Completions</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Most Completed</div>
             ${sortedByCompletions.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'completions')).join('')}
           </div>
           <div style="margin-bottom: 16px;">
-            <div style="font-weight: 600; margin-bottom: 8px;">Highest First Scores</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Highest Scores</div>
             ${sortedByScore.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'score')).join('')}
           </div>
           <div>
-            <div style="font-weight: 600; margin-bottom: 8px;">Most Unique Opens</div>
+            <div style="font-weight: 600; margin-bottom: 8px;">Most Opened</div>
             ${sortedByOpens.map((quiz, index) => renderTopQuizItem(quiz, index + 1, 'opens')).join('')}
           </div>
         `;
@@ -1293,13 +1274,13 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
       let value, label;
       if (type === 'completions') {
         value = quiz.timesCompleted || 0;
-        label = 'First completions';
+        label = 'Completions';
       } else if (type === 'score') {
         value = Math.round(quiz.averageScore || 0) + '%';
-        label = 'First score';
+        label = 'Score';
       } else {
         value = quiz.timesOpened || 0;
-        label = 'Unique opens';
+        label = 'Opens';
       }
       
       return `
@@ -1364,7 +1345,7 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
           labels: displayDates,
           datasets: [
             {
-              label: 'Unique Quiz Opens',
+              label: 'Quiz Opens',
               data: opensData,
               borderColor: '#6366f1',
               backgroundColor: 'rgba(99, 102, 241, 0.1)',
@@ -1373,7 +1354,7 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
               fill: true
             },
             {
-              label: 'First Quiz Completions',
+              label: 'Quiz Completions',
               data: completionsData,
               borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -1454,7 +1435,7 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
               pdfDownloads: 0,
               totalQuestions: quiz.totalQuestions || 0,
               accessHistory: {}, // Reset access history
-              deviceSummaries: {}
+              sessionSummaries: {}
             };
             
             ref.set(resetData).then(() => {
@@ -1558,7 +1539,7 @@ function recordQuizAccess(id, name, eventType, score, totalQuestions, timeSpent,
 
     // Export to CSV
     function exportToCSV() {
-      const headers = ['Name', 'Unique Opens', 'First Completions', 'First Score Average', 'Total First Completion Time', 'Total Questions', 'First Accessed', 'Last Accessed'];
+      const headers = ['Name', 'Times Opened', 'Times Completed', 'Average Score', 'Total Time Spent', 'Total Questions', 'First Accessed', 'Last Accessed'];
       const csvContent = [
         headers.join(','),
         ...currentQuizData.map(quiz => [
