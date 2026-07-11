@@ -687,12 +687,21 @@
 
     function ensureHistoryBucket(historyGroup, key) {
       if (!historyGroup[key]) {
-        historyGroup[key] = { opens: 0, completions: 0, totalScore: 0, pdfDownloads: 0 };
+        historyGroup[key] = { opens: 0, completions: 0, totalScore: 0, pdfDownloads: 0, tasbeehStarts: 0, tasbeehCompletions: 0 };
       }
     }
 
     function createDefaultSessionSummary() {
-      return { hasCompleted: false, firstCompletedAt: null, lastAccessed: null, firstScore: null };
+      return {
+        hasCompleted: false,
+        firstCompletedAt: null,
+        lastAccessed: null,
+        firstScore: null,
+        tasbeehStarted: false,
+        tasbeehCompleted: false,
+        tasbeehStartedAt: null,
+        tasbeehCompletedAt: null
+      };
     }
 
     function processTrackingData() {
@@ -711,16 +720,21 @@
       const totalQuestions = params.get("total_questions");
       const timeSpent = params.get("time_spent");
       const sessionId = params.get("session_id");
+      const counterId = params.get("counter_id") || "tasbeeh";
+      const counterTarget = params.get("counter_target");
+      const counterCount = params.get("counter_count");
 
       updateCurrentQuizDisplay(quizName, identity.category, identity.quizId, timestamp, eventType, score, totalQuestions);
-      recordQuizAccess(identity.category, identity.quizId, quizName, eventType, score, totalQuestions, timeSpent, sessionId);
+      recordQuizAccess(identity.category, identity.quizId, quizName, eventType, score, totalQuestions, timeSpent, sessionId, counterId, counterTarget, counterCount);
     }
 
     function updateCurrentQuizDisplay(name, category, id, timestamp, eventType, score, totalQuestions) {
       const eventLabels = {
         quiz_open: "Quiz opened",
         quiz_complete: "Quiz completed",
-        pdf_download: "PDF downloaded"
+        pdf_download: "PDF downloaded",
+        tasbeeh_started: "Counter started",
+        tasbeeh_completed: "Counter completed"
       };
 
       document.getElementById("current-quiz").innerHTML = `
@@ -735,7 +749,7 @@
       `;
     }
 
-    function recordQuizAccess(category, id, name, eventType, score, totalQuestions, timeSpent, sessionId) {
+    function recordQuizAccess(category, id, name, eventType, score, totalQuestions, timeSpent, sessionId, counterId, counterTarget, counterCount) {
       const identity = normalizeTrackingIdentity(category, id);
       const normalizedCategory = identity.category;
       const quizId = identity.quizId;
@@ -787,9 +801,27 @@
           totalTimeSpent: quizData.totalTimeSpent || 0,
           totalQuestions: totalQuestions || quizData.totalQuestions || 0,
           pdfDownloads: quizData.pdfDownloads || 0,
+          tasbeehStarts: quizData.tasbeehStarts || 0,
+          tasbeehCompletions: quizData.tasbeehCompletions || 0,
+          quizCompletedWithTasbeehComplete: quizData.quizCompletedWithTasbeehComplete || 0,
+          quizCompletedWithoutTasbeehComplete: quizData.quizCompletedWithoutTasbeehComplete || 0,
+          tasbeehCounters: quizData.tasbeehCounters || {},
           accessHistory,
           sessionSummaries
         };
+        const normalizedCounterId = String(counterId || "tasbeeh").trim() || "tasbeeh";
+        if (!updatedData.tasbeehCounters[normalizedCounterId]) {
+          updatedData.tasbeehCounters[normalizedCounterId] = {
+            starts: 0,
+            completions: 0,
+            target: parseInt(counterTarget, 10) || 30,
+            lastCount: 0,
+            lastStartedAt: null,
+            lastCompletedAt: null
+          };
+        }
+        const counterStats = updatedData.tasbeehCounters[normalizedCounterId];
+        counterStats.target = parseInt(counterTarget, 10) || counterStats.target || 30;
 
         if (eventType === "quiz_open") {
           updatedData.timesOpened += 1;
@@ -821,6 +853,11 @@
             if (sessionSummary) {
               sessionSummary.hasCompleted = true;
               sessionSummary.firstCompletedAt = sessionSummary.firstCompletedAt || now;
+              if (sessionSummary.tasbeehCompleted) {
+                updatedData.quizCompletedWithTasbeehComplete += 1;
+              } else {
+                updatedData.quizCompletedWithoutTasbeehComplete += 1;
+              }
             }
           }
         } else if (eventType === "pdf_download") {
@@ -828,6 +865,46 @@
           accessHistory.daily[today].pdfDownloads += 1;
           accessHistory.weekly[weekKey].pdfDownloads += 1;
           accessHistory.monthly[monthKey].pdfDownloads += 1;
+        } else if (eventType === "tasbeeh_started") {
+          const shouldCountStart = !sessionSummary || !sessionSummary.tasbeehStarted;
+          if (shouldCountStart) {
+            updatedData.tasbeehStarts += 1;
+            counterStats.starts += 1;
+            counterStats.lastStartedAt = now;
+            accessHistory.daily[today].tasbeehStarts += 1;
+            accessHistory.weekly[weekKey].tasbeehStarts += 1;
+            accessHistory.monthly[monthKey].tasbeehStarts += 1;
+          }
+          counterStats.lastCount = parseInt(counterCount, 10) || counterStats.lastCount || 0;
+          if (sessionSummary) {
+            sessionSummary.tasbeehStarted = true;
+            sessionSummary.tasbeehStartedAt = sessionSummary.tasbeehStartedAt || now;
+          }
+        } else if (eventType === "tasbeeh_completed") {
+          const shouldCountStart = !sessionSummary || !sessionSummary.tasbeehStarted;
+          const shouldCountCompletion = !sessionSummary || !sessionSummary.tasbeehCompleted;
+          if (shouldCountStart) {
+            updatedData.tasbeehStarts += 1;
+            counterStats.starts += 1;
+            accessHistory.daily[today].tasbeehStarts += 1;
+            accessHistory.weekly[weekKey].tasbeehStarts += 1;
+            accessHistory.monthly[monthKey].tasbeehStarts += 1;
+          }
+          if (shouldCountCompletion) {
+            updatedData.tasbeehCompletions += 1;
+            counterStats.completions += 1;
+            counterStats.lastCompletedAt = now;
+            accessHistory.daily[today].tasbeehCompletions += 1;
+            accessHistory.weekly[weekKey].tasbeehCompletions += 1;
+            accessHistory.monthly[monthKey].tasbeehCompletions += 1;
+          }
+          counterStats.lastCount = parseInt(counterCount, 10) || counterStats.target || 30;
+          if (sessionSummary) {
+            sessionSummary.tasbeehStarted = true;
+            sessionSummary.tasbeehCompleted = true;
+            sessionSummary.tasbeehStartedAt = sessionSummary.tasbeehStartedAt || now;
+            sessionSummary.tasbeehCompletedAt = sessionSummary.tasbeehCompletedAt || now;
+          }
         }
 
         if (sessionSummary && sessionKey) {
@@ -995,6 +1072,12 @@
       grid.innerHTML = quizzes.map((quiz) => {
         const completionRate = quiz.timesOpened > 0 ? (quiz.timesCompleted / quiz.timesOpened) * 100 : 0;
         const avgTime = quiz.timesCompleted > 0 ? Math.round((quiz.totalTimeSpent || 0) / quiz.timesCompleted) : 0;
+        const tasbeehStarts = quiz.tasbeehStarts || 0;
+        const tasbeehCompletions = quiz.tasbeehCompletions || 0;
+        const tasbeehUnfinished = Math.max(tasbeehStarts - tasbeehCompletions, 0);
+        const tasbeehRate = tasbeehStarts > 0 ? (tasbeehCompletions / tasbeehStarts) * 100 : 0;
+        const quizVsTasbeehRate = tasbeehCompletions > 0 ? ((quiz.timesCompleted || 0) / tasbeehCompletions) * 100 : 0;
+        const quizWithoutTasbeeh = quiz.quizCompletedWithoutTasbeehComplete || 0;
         return `
           <article class="card quiz-card">
             <h3 class="quiz-title">
@@ -1007,14 +1090,23 @@
               <div class="metric"><strong>${quiz.timesCompleted || 0}</strong><span>Completions</span></div>
               <div class="metric"><strong>${Math.round(quiz.averageScore || 0)}%</strong><span>Avg score</span></div>
               <div class="metric"><strong>${quiz.pdfDownloads || 0}</strong><span>PDFs</span></div>
+              <div class="metric"><strong>${tasbeehStarts}</strong><span>Counter starts</span></div>
+              <div class="metric"><strong>${tasbeehCompletions}</strong><span>Counter finished</span></div>
+              <div class="metric"><strong>${tasbeehUnfinished}</strong><span>Started not finished</span></div>
+              <div class="metric"><strong>${tasbeehRate.toFixed(1)}%</strong><span>Counter finish rate</span></div>
             </div>
             <div>
               <div class="mini-label">Completion rate ${completionRate.toFixed(1)}%</div>
               <div class="progress"><div style="width:${Math.min(completionRate, 100)}%"></div></div>
             </div>
+            <div>
+              <div class="mini-label">Quiz completed vs counter finished ${quizVsTasbeehRate.toFixed(1)}%</div>
+              <div class="progress"><div style="width:${Math.min(quizVsTasbeehRate, 100)}%"></div></div>
+            </div>
             <div class="muted">
               Last access: ${quiz.lastAccessed ? new Date(quiz.lastAccessed).toLocaleString() : "Never"}<br>
-              Questions: ${quiz.totalQuestions || "N/A"} · Avg time: ${avgTime}s
+              Questions: ${quiz.totalQuestions || "N/A"} · Avg time: ${avgTime}s<br>
+              Quiz completions without counter finish: ${quizWithoutTasbeeh}
             </div>
             <div class="actions">
               <button class="btn" onclick="resetQuizStats('${quiz.storageKey}')">Reset</button>
@@ -1042,6 +1134,11 @@
         averageScore: 0,
         totalTimeSpent: 0,
         pdfDownloads: 0,
+        tasbeehStarts: 0,
+        tasbeehCompletions: 0,
+        quizCompletedWithTasbeehComplete: 0,
+        quizCompletedWithoutTasbeehComplete: 0,
+        tasbeehCounters: {},
         totalQuestions: quiz.totalQuestions || 0,
         accessHistory: {},
         sessionSummaries: {}
@@ -1082,7 +1179,7 @@
     }
 
     function exportToCSV() {
-      const headers = ["Tracking Key", "Category", "Raw Quiz ID", "Name", "Opens", "Completions", "Average Score", "PDF Downloads", "Total Time", "Questions", "First Accessed", "Last Accessed"];
+      const headers = ["Tracking Key", "Category", "Raw Quiz ID", "Name", "Opens", "Completions", "Average Score", "PDF Downloads", "Counter Starts", "Counter Finished", "Counter Started Not Finished", "Counter Finish Rate", "Quiz Completed With Counter", "Quiz Completed Without Counter", "Quiz Vs Counter Finished Rate", "Total Time", "Questions", "First Accessed", "Last Accessed"];
       const rows = currentQuizData.map((quiz) => [
         quiz.displayId,
         quiz.category,
@@ -1092,6 +1189,13 @@
         quiz.timesCompleted || 0,
         Math.round(quiz.averageScore || 0),
         quiz.pdfDownloads || 0,
+        quiz.tasbeehStarts || 0,
+        quiz.tasbeehCompletions || 0,
+        Math.max((quiz.tasbeehStarts || 0) - (quiz.tasbeehCompletions || 0), 0),
+        (quiz.tasbeehStarts || 0) > 0 ? (((quiz.tasbeehCompletions || 0) / quiz.tasbeehStarts) * 100).toFixed(1) : "0.0",
+        quiz.quizCompletedWithTasbeehComplete || 0,
+        quiz.quizCompletedWithoutTasbeehComplete || 0,
+        (quiz.tasbeehCompletions || 0) > 0 ? (((quiz.timesCompleted || 0) / quiz.tasbeehCompletions) * 100).toFixed(1) : "0.0",
         quiz.totalTimeSpent || 0,
         quiz.totalQuestions || 0,
         quiz.firstAccessed || "",
